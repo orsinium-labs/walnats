@@ -5,13 +5,11 @@ import walnats
 from .events import COUNTER_EVENT, CounterModel
 
 
-EVENTS = walnats.Events(
-    COUNTER_EVENT,
-)
-
-
 async def run_publisher() -> None:
-    conn = await EVENTS.connect(["nats://localhost:4222"])
+    events = walnats.Events(
+        COUNTER_EVENT,
+    )
+    conn = await events.connect(["nats://localhost:4222"])
     await conn.register_events()
     for i in count():
         event = CounterModel(value=i)

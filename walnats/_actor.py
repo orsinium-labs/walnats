@@ -19,6 +19,7 @@ class Actor(Generic[M]):
     event: Event[M]
     handler: Callable[[M], Awaitable[None]]
     ack_wait: float | None = None
+    max_attempts: int | None = None
 
     @property
     def consumer_name(self) -> str:
@@ -26,9 +27,13 @@ class Actor(Generic[M]):
 
     @property
     def _consumer_config(self) -> nats.js.api.ConsumerConfig:
+        """
+        https://docs.nats.io/nats-concepts/jetstream/consumers#configuration
+        """
         return nats.js.api.ConsumerConfig(
             durable_name=self.consumer_name,
             ack_wait=self.ack_wait,
+            max_deliver=self.max_attempts,
         )
 
     async def _add(self, js: nats.js.JetStreamContext) -> None:

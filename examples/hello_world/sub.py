@@ -8,13 +8,11 @@ async def print_counter(event: CounterModel) -> None:
     print(f'got value {event.value}')
 
 
-ACTORS = walnats.Actors(
-    walnats.Actor('print_counter', COUNTER_EVENT, print_counter)
-)
-
-
 async def run_subscriber() -> None:
-    conn = await ACTORS.connect(["nats://localhost:4222"])
+    actors = walnats.Actors(
+        walnats.Actor('print_counter', COUNTER_EVENT, print_counter)
+    )
+    conn = await actors.connect(["nats://localhost:4222"])
     await conn.register_actors()
     await conn.listen()
 
