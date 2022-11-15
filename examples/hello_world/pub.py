@@ -15,7 +15,7 @@ async def run_publisher() -> None:
         event = CounterModel(value=i)
         await conn.emit(COUNTER_EVENT, event)
         print(f'sent value {event.value}')
-        await asyncio.sleep(2)
+        await asyncio.sleep(1)
 
 if __name__ == '__main__':
     asyncio.run(run_publisher())

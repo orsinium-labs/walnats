@@ -7,7 +7,8 @@ from typing import Awaitable, Callable, Generic, TypeVar
 from nats.aio.msg import Msg
 import nats.js
 
-from ._event import Model, Event
+from ._event import Event
+from ._serializers import Model
 
 
 M = TypeVar('M', bound=Model)
@@ -53,7 +54,7 @@ class Actor(Generic[M]):
             except asyncio.TimeoutError:
                 continue
             for msg in msgs:
-                event = self.event.model.parse_raw(msg.data.decode())
+                event = self.event._serializer.decode(msg.data)
                 pulse_task = asyncio.create_task(self._pulse(msg))
                 try:
                     await self.handler(event)

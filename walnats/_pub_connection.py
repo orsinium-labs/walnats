@@ -5,7 +5,8 @@ from typing import AsyncIterator, TypeVar
 
 import nats
 import nats.js
-from ._event import Event, Model
+from ._event import Event
+from ._serializers import Model
 
 
 M = TypeVar('M', bound=Model)
@@ -24,8 +25,9 @@ class PubConnection:
             tasks.append(task)
         await asyncio.gather(*tasks)
 
-    async def emit(self, event: Event[M], payload: M) -> None:
-        await self._nc.publish(event.subject_name, payload.json().encode())
+    async def emit(self, event: Event[M], message: M) -> None:
+        payload = event._serializer.encode(message)
+        await self._nc.publish(event.subject_name, payload)
 
     async def monitor(self) -> AsyncIterator[Model]:
         queue: asyncio.Queue[Model] = asyncio.Queue()

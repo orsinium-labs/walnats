@@ -1,23 +1,15 @@
 from __future__ import annotations
 import asyncio
 from dataclasses import dataclass
-from typing import Generic, Protocol, TypeVar
+from functools import cached_property
+from typing import Generic, TypeVar
 
 import nats
 import nats.js
-import pydantic
-pydantic.BaseModel
+
+from ._serializers import Serializer, get_serializer, Model
 
 M = TypeVar('M', bound='Model')
-
-
-class Model(Protocol):
-    def json(self) -> str:
-        raise NotImplementedError
-
-    @classmethod
-    def parse_raw(cls: type[M], data: str) -> M:
-        raise NotImplementedError
 
 
 @dataclass(frozen=True)
@@ -42,6 +34,7 @@ class Limits:
 class Event(Generic[M]):
     name: str
     model: type[M]
+    serializer: Serializer[M] | None = None
     description: str | None = None
     limits: Limits = Limits()
 
@@ -52,6 +45,12 @@ class Event(Generic[M]):
     @property
     def stream_name(self) -> str:
         return self.name
+
+    @cached_property
+    def _serializer(self) -> Serializer[M]:
+        if self.serializer is None:
+            return get_serializer(self.model)
+        return self.serializer
 
     @property
     def _stream_config(self) -> nats.js.api.StreamConfig:
@@ -78,5 +77,5 @@ class Event(Generic[M]):
     async def _monitor(self, nc: nats.NATS, q: asyncio.Queue[M]) -> None:
         sub = await nc.subscribe('count')
         async for msg in sub.messages:
-            event = self.model.parse_raw(msg.data.decode())
+            event = self._serializer.decode(msg.data)
             await q.put(event)

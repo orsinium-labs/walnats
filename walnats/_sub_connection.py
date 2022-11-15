@@ -25,7 +25,7 @@ class SubConnection:
     async def listen(self) -> None:
         tasks = [asyncio.create_task(a._listen(self._js)) for a in self._actors]
         try:
-            await asyncio.wait(tasks, return_when=asyncio.ALL_COMPLETED)
+            await asyncio.gather(*tasks)
         finally:
             for task in tasks:
                 task.cancel()
