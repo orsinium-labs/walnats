@@ -1,6 +1,8 @@
 
 import asyncio
+
 import walnats
+
 from .events import COUNTER_EVENT, CounterModel
 
 

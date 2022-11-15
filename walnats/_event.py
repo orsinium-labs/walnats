@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 import asyncio
 from dataclasses import dataclass
 from functools import cached_property
@@ -7,7 +8,7 @@ from typing import Generic, TypeVar
 import nats
 import nats.js
 
-from ._serializers import Serializer, get_serializer, Model
+from ._serializers import Model, Serializer, get_serializer
 
 M = TypeVar('M', bound='Model')
 

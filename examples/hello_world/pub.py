@@ -1,7 +1,9 @@
 
 import asyncio
 from itertools import count
+
 import walnats
+
 from .events import COUNTER_EVENT, CounterModel
 
 

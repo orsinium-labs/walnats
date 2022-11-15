@@ -1,13 +1,14 @@
 from __future__ import annotations
+
 import asyncio
 from dataclasses import dataclass
 from typing import AsyncIterator, TypeVar
 
 import nats
 import nats.js
+
 from ._event import Event
 from ._serializers import Model
-
 
 M = TypeVar('M', bound=Model)
 

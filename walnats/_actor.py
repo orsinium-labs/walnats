@@ -1,15 +1,15 @@
 
 from __future__ import annotations
+
 import asyncio
 from dataclasses import dataclass
 from typing import Awaitable, Callable, Generic, TypeVar
 
-from nats.aio.msg import Msg
 import nats.js
+from nats.aio.msg import Msg
 
 from ._event import Event
 from ._serializers import Model
-
 
 M = TypeVar('M', bound=Model)
 

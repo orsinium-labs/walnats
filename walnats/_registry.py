@@ -1,12 +1,15 @@
 from __future__ import annotations
+
 from typing import TYPE_CHECKING
 
 import nats
-from ._sub_connection import SubConnection
+
 from ._pub_connection import PubConnection
+from ._sub_connection import SubConnection
+
 if TYPE_CHECKING:
-    from ._event import Event
     from ._actor import Actor
+    from ._event import Event
 
 
 class Events:
