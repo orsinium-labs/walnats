@@ -1,5 +1,4 @@
 from __future__ import annotations
-from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 import nats
@@ -10,12 +9,12 @@ if TYPE_CHECKING:
     from ._actor import Actor
 
 
-@dataclass(frozen=True)
 class Events:
-    _events: list[Event]
+    __slots__ = ['_events']
+    _events: tuple[Event, ...]
 
-    def add_event(self, event: Event) -> None:
-        self._events.append(event)
+    def __init__(self, *events: Event) -> None:
+        self._events = events
 
     async def connect(self, servers: list[str]) -> PubConnection:
         nc = await nats.connect(servers)
@@ -23,12 +22,12 @@ class Events:
         return PubConnection(nc, js, self._events)
 
 
-@dataclass(frozen=True)
 class Actors:
-    _actors: list[Actor]
+    __slots__ = ['_actors']
+    _actors: tuple[Actor, ...]
 
-    def add_actor(self, actor: Actor) -> None:
-        self._actors.append(actor)
+    def __init__(self, *actors: Actor) -> None:
+        self._actors = actors
 
     async def connect(self, servers: list[str]) -> SubConnection:
         nc = await nats.connect(servers)

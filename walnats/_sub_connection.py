@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 @dataclass(frozen=True)
 class SubConnection:
     _js: nats.js.JetStreamContext
-    _actors: list[Actor]
+    _actors: tuple[Actor, ...]
 
     async def register_actors(self) -> None:
         tasks = []

@@ -15,7 +15,7 @@ M = TypeVar('M', bound=Model)
 class PubConnection:
     _nc: nats.NATS
     _js: nats.js.JetStreamContext
-    _events: list[Event]
+    _events: tuple[Event, ...]
 
     async def register_events(self) -> None:
         tasks = []
