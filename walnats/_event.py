@@ -31,26 +31,40 @@ class Limits:
     message_size: int | None = None
 
 
-@dataclass(frozen=True)
 class Event(Generic[M]):
-    name: str
-    model: type[M]
-    serializer: Serializer[M] | None = None
-    description: str | None = None
-    limits: Limits = Limits()
+    _name: str
+    _model: type[M]
+    _description: str | None = None
+    _limits: Limits = Limits()
+    _serializer: Serializer[M] | None
+
+    def __init__(
+        self,
+        name: str,
+        model: type[M],
+        *,
+        serializer: Serializer[M] | None = None,
+        description: str | None = None,
+        limits: Limits = Limits(),
+    ) -> None:
+        self._name = name
+        self._model = model
+        self._serializer = serializer
+        self._description = description
+        self._limits = limits
 
     @property
     def subject_name(self) -> str:
-        return self.name
+        return self._name
 
     @property
     def stream_name(self) -> str:
-        return self.name
+        return self._name
 
     @cached_property
-    def _serializer(self) -> Serializer[M]:
+    def serializer(self) -> Serializer[M]:
         if self.serializer is None:
-            return get_serializer(self.model)
+            return get_serializer(self._model)
         return self.serializer
 
     @property
@@ -61,15 +75,15 @@ class Event(Generic[M]):
         return nats.js.api.StreamConfig(
             name=self.stream_name,
             subjects=[self.subject_name],
-            description=self.description,
+            description=self._description,
             retention=nats.js.api.RetentionPolicy.INTEREST,
 
             # limits
-            max_age=self.limits.age,
-            max_consumers=self.limits.consumers,
-            max_msgs=self.limits.messages,
-            max_bytes=self.limits.bytes,
-            max_msg_size=self.limits.message_size,
+            max_age=self._limits.age,
+            max_consumers=self._limits.consumers,
+            max_msgs=self._limits.messages,
+            max_bytes=self._limits.bytes,
+            max_msg_size=self._limits.message_size,
         )
 
     async def _add(self, js: nats.js.JetStreamContext) -> None:
@@ -78,5 +92,8 @@ class Event(Generic[M]):
     async def _monitor(self, nc: nats.NATS, q: asyncio.Queue[M]) -> None:
         sub = await nc.subscribe('count')
         async for msg in sub.messages:
-            event = self._serializer.decode(msg.data)
+            event = self.serializer.decode(msg.data)
             await q.put(event)
+
+    def __repr__(self) -> str:
+        return f'{type(self).__name__}({repr(self._name)}, ...)'

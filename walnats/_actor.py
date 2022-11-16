@@ -54,7 +54,7 @@ class Actor(Generic[M]):
             except asyncio.TimeoutError:
                 continue
             for msg in msgs:
-                event = self.event._serializer.decode(msg.data)
+                event = self.event.serializer.decode(msg.data)
                 pulse_task = asyncio.create_task(self._pulse(msg))
                 try:
                     await self.handler(event)

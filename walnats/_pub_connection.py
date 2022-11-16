@@ -29,7 +29,7 @@ class PubConnection:
         await asyncio.gather(*tasks)
 
     async def emit(self, event: Event[M], message: M) -> None:
-        payload = event._serializer.encode(message)
+        payload = event.serializer.encode(message)
         await self._nc.publish(event.subject_name, payload)
 
     async def monitor(self) -> AsyncIterator[Model]:
