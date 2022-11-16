@@ -12,6 +12,9 @@ if TYPE_CHECKING:
     from ._event import Event
 
 
+DEFAULT_SERVER = 'nats://localhost:4222'
+
+
 class Events:
     __slots__ = ['_events']
     _events: tuple[Event, ...]
@@ -19,7 +22,7 @@ class Events:
     def __init__(self, *events: Event) -> None:
         self._events = events
 
-    async def connect(self, servers: list[str]) -> PubConnection:
+    async def connect(self, servers: list[str] | str = DEFAULT_SERVER) -> PubConnection:
         nc = await nats.connect(servers)
         js = nc.jetstream()
         return PubConnection(nc, js, self._events)
@@ -32,7 +35,7 @@ class Actors:
     def __init__(self, *actors: Actor) -> None:
         self._actors = actors
 
-    async def connect(self, servers: list[str]) -> SubConnection:
+    async def connect(self, servers: list[str] | str = DEFAULT_SERVER) -> SubConnection:
         nc = await nats.connect(servers)
         js = nc.jetstream()
         return SubConnection(js, self._actors)

@@ -63,7 +63,7 @@ class Event(Generic[M]):
 
     @cached_property
     def serializer(self) -> Serializer[M]:
-        if self.serializer is None:
+        if self._serializer is None:
             return get_serializer(self._model)
         return self.serializer
 

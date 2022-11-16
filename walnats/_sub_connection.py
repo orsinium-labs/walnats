@@ -25,8 +25,12 @@ class SubConnection:
             tasks.append(task)
         await asyncio.gather(*tasks)
 
-    async def listen(self) -> None:
-        tasks = [asyncio.create_task(a._listen(self._js)) for a in self._actors]
+    async def listen(self, stop_after: int = 0) -> None:
+        tasks: list[asyncio.Task] = []
+        for actor in self._actors:
+            coro = actor._listen(js=self._js, stop_after=stop_after)
+            task = asyncio.create_task(coro)
+            tasks.append(task)
         try:
             await asyncio.gather(*tasks)
         finally:
