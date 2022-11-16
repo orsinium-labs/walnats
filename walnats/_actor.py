@@ -46,7 +46,8 @@ class Actor(Generic[M]):
     async def _listen(
         self,
         js: nats.js.JetStreamContext,
-        stop_after: int = 0,
+        sem: asyncio.Semaphore,
+        stop_after: int,
     ) -> None:
         psub = await js.pull_subscribe_bind(
             durable=self.consumer_name,
@@ -54,16 +55,17 @@ class Actor(Generic[M]):
         )
         total_consumed = 0
         while True:
-            try:
-                msgs = await psub.fetch(timeout=5)
-            except asyncio.TimeoutError:
-                continue
-            for msg in msgs:
-                await self._handle_message(msg)
-            if stop_after:
-                total_consumed += len(msgs)
-                if total_consumed >= stop_after:
-                    return
+            async with sem:
+                try:
+                    msgs = await psub.fetch(timeout=5)
+                except asyncio.TimeoutError:
+                    continue
+                for msg in msgs:
+                    await self._handle_message(msg)
+                if stop_after:
+                    total_consumed += len(msgs)
+                    if total_consumed >= stop_after:
+                        return
 
     async def _handle_message(self, msg: Msg) -> None:
         event = self.event.serializer.decode(msg.data)
