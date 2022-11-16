@@ -16,7 +16,9 @@ class SubConnection:
     _js: nats.js.JetStreamContext
     _actors: tuple[Actor, ...]
 
-    async def register_actors(self) -> None:
+    async def register(self) -> None:
+        """Add nats consumers for actors.
+        """
         tasks = []
         for actor in self._actors:
             task = asyncio.create_task(actor._add(self._js))

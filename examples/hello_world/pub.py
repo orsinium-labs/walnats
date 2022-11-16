@@ -12,7 +12,7 @@ async def run_publisher() -> None:
         COUNTER_EVENT,
     )
     conn = await events.connect(["nats://localhost:4222"])
-    await conn.register_events()
+    await conn.register()
     for i in count():
         event = CounterModel(value=i)
         await conn.emit(COUNTER_EVENT, event)

@@ -19,7 +19,9 @@ class PubConnection:
     _js: nats.js.JetStreamContext
     _events: tuple[Event, ...]
 
-    async def register_events(self) -> None:
+    async def register(self) -> None:
+        """Create nats streams for events.
+        """
         tasks = []
         for event in self._events:
             task = asyncio.create_task(event._add(self._js))
