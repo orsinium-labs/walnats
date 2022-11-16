@@ -1,6 +1,8 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+import dataclasses
+import datetime
+import json
 from typing import TYPE_CHECKING, Generic, TypeVar
 
 try:
@@ -16,7 +18,7 @@ Model = object
 M = TypeVar('M', bound=Model)
 
 
-@dataclass(frozen=True)
+@dataclasses.dataclass(frozen=True)
 class Serializer(Generic[M]):
     model: type[M]
 
@@ -31,8 +33,10 @@ class Serializer(Generic[M]):
         raise NotImplementedError
 
 
-@dataclass(frozen=True)
+@dataclasses.dataclass(frozen=True)
 class PydanticSerializer(Serializer['BaseModel']):
+    """Serialize pydantic models as JSON.
+    """
     model: type[BaseModel]
 
     @classmethod
@@ -50,8 +54,96 @@ class PydanticSerializer(Serializer['BaseModel']):
         return self.model.parse_raw(data)
 
 
+@dataclasses.dataclass(frozen=True)
+class DataclassSerializer(Serializer[object]):
+    """Serialize dataclass classes as JSON.
+    """
+    model: type[object]
+
+    @classmethod
+    def new(cls, model: type[Model]) -> DataclassSerializer | None:
+        if dataclasses.is_dataclass(model):
+            return cls(model)
+        return None
+
+    def encode(self, message: object) -> bytes:
+        payload = dataclasses.asdict(message)
+        return json.dumps(payload).encode()
+
+    def decode(self, data: bytes) -> object:
+        payload = json.loads(data)
+        return self.model(**payload)
+
+
+@dataclasses.dataclass(frozen=True)
+class BytesSerializer(Serializer[bytes]):
+    """Assume bytes to be already serialized, emit it as is.
+    """
+    model: type[bytes]
+
+    @classmethod
+    def new(cls, model: type[Model]) -> BytesSerializer | None:
+        if issubclass(model, bytes):
+            return cls(model)
+        return None
+
+    def encode(self, message: bytes) -> bytes:
+        return message
+
+    def decode(self, data: bytes) -> bytes:
+        return data
+
+
+@dataclasses.dataclass(frozen=True)
+class PrimitiveSerializer(Serializer[object]):
+    """Serialize built-in types as JSON.
+    """
+    model: type[object]
+
+    @classmethod
+    def new(cls, model: type[Model]) -> PrimitiveSerializer | None:
+        # tuple and set aren't supported by JSON, will be converted into list,
+        # and so won't survive roundtrip. Hence it's better not to support them
+        # and let the user convert the message type. Otherwise, we won't get type safety.
+        if issubclass(model, (str, int, float, list, dict, bool)):
+            return cls(model)
+        return None
+
+    def encode(self, message: object) -> bytes:
+        return json.dumps(message).encode()
+
+    def decode(self, data: bytes) -> object:
+        return json.loads(data)
+
+
+@dataclasses.dataclass(frozen=True)
+class DatetimeSerializer(Serializer[datetime.datetime | datetime.date]):
+    """Serialize built-in types as JSON.
+    """
+    model: type[datetime.datetime | datetime.date]
+
+    @classmethod
+    def new(cls, model: type[Model]) -> DatetimeSerializer | None:
+        # tuple and set aren't supported by JSON, will be converted into list,
+        # and so won't survive roundtrip. Hence it's better not to support them
+        # and let the user convert the message type. Otherwise, we won't get type safety.
+        if issubclass(model, (datetime.datetime, datetime.date)):
+            return cls(model)
+        return None
+
+    def encode(self, message: datetime.datetime | datetime.date) -> bytes:
+        return message.isoformat().encode()
+
+    def decode(self, data: bytes) -> datetime.datetime | datetime.date:
+        return self.model.fromisoformat(data.decode())
+
+
 SERIALIZERS: tuple[type[Serializer], ...] = (
     PydanticSerializer,
+    DataclassSerializer,
+    BytesSerializer,
+    DatetimeSerializer,
+    PrimitiveSerializer,
 )
 
 
