@@ -1,7 +1,9 @@
-from dataclasses import dataclass
 import datetime
+from dataclasses import dataclass
+
 import pydantic
 import pytest
+
 from walnats._serializers import get_serializer
 
 
