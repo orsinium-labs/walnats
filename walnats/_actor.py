@@ -48,6 +48,7 @@ class Actor(Generic[M]):
         js: nats.js.JetStreamContext,
         poll_sem: asyncio.Semaphore,
         worker_sem: asyncio.Semaphore,
+        poll_delay: float,
         burst: bool,
         batch: int,
     ) -> None:
@@ -56,12 +57,13 @@ class Actor(Generic[M]):
             stream=self.event.stream_name,
         )
         while True:
+            # Don't try polling new messages if there are no workers to handle them.
             if worker_sem.locked():
                 await worker_sem.acquire()
                 worker_sem.release()
             async with poll_sem:
                 try:
-                    msgs = await psub.fetch(batch=batch, timeout=5)
+                    msgs = await psub.fetch(batch=batch, timeout=poll_delay)
                 except asyncio.TimeoutError:
                     if burst:
                         return
