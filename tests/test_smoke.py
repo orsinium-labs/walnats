@@ -31,6 +31,6 @@ async def test_smoke() -> None:
     await sub_conn.register()
 
     await pub_conn.emit(event, message)
-    await sub_conn.listen(stop_after=1)
+    await sub_conn.listen(burst=True)
 
     assert received == message

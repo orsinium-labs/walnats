@@ -26,14 +26,23 @@ class SubConnection:
         await asyncio.gather(*tasks)
 
     async def listen(
-        self,
-        stop_after: int = 0,
-        workers: int = 100,
+        self, *,
+        burst: bool = False,
+        max_polls: int = 100,
+        max_workers: int = 100,
+        batch: int = 1,
     ) -> None:
-        sem = asyncio.Semaphore(workers)
+        poll_sem = asyncio.Semaphore(max_polls)
+        worker_sem = asyncio.Semaphore(max_workers)
         tasks: list[asyncio.Task] = []
         for actor in self._actors:
-            coro = actor._listen(js=self._js, stop_after=stop_after, sem=sem)
+            coro = actor._listen(
+                js=self._js,
+                burst=burst,
+                poll_sem=poll_sem,
+                worker_sem=worker_sem,
+                batch=batch,
+            )
             task = asyncio.create_task(coro)
             tasks.append(task)
         try:
