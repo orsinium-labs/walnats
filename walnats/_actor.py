@@ -38,6 +38,11 @@ class Actor(Generic[M]):
         )
 
     async def _add(self, js: nats.js.JetStreamContext) -> None:
+        """Add Nats consumer.
+
+        After this is executed for the first time, the stream will start collecting
+        all messages for the actor.
+        """
         await js.add_consumer(
             stream=self.event.stream_name,
             config=self._consumer_config,
@@ -52,15 +57,21 @@ class Actor(Generic[M]):
         burst: bool,
         batch: int,
     ) -> None:
+        """Subscribe to the stream, pull relevant messages, and run the handler for each.
+
+        See SubConnection.listen for the list of arguments.
+        """
         psub = await js.pull_subscribe_bind(
             durable=self.consumer_name,
             stream=self.event.stream_name,
         )
         while True:
-            # Don't try polling new messages if there are no workers to handle them.
+            # don't try polling new messages if there are no workers to handle them
             if worker_sem.locked():
                 await worker_sem.acquire()
                 worker_sem.release()
+
+            # poll messages
             async with poll_sem:
                 try:
                     msgs = await psub.fetch(batch=batch, timeout=poll_delay)
@@ -68,17 +79,27 @@ class Actor(Generic[M]):
                     if burst:
                         return
                     continue
+
+            # run workers
+            tasks: list[asyncio.Task] = []
             for msg in msgs:
-                async with worker_sem:
-                    await self._handle_message(msg)
+                coro = self._handle_message(msg, worker_sem)
+                task = asyncio.create_task(coro)
+                tasks.append(task)
+            try:
+                await asyncio.gather(*tasks)
+            except (Exception, asyncio.CancelledError):
+                for task in tasks:
+                    task.cancel()
             if burst:
                 return
 
-    async def _handle_message(self, msg: Msg) -> None:
-        event = self.event.serializer.decode(msg.data)
+    async def _handle_message(self, msg: Msg, sem: asyncio.Semaphore) -> None:
         pulse_task = asyncio.create_task(self._pulse(msg))
         try:
-            await self.handler(event)
+            async with sem:
+                event = self.event.serializer.decode(msg.data)
+                await self.handler(event)
         except (Exception, asyncio.CancelledError):
             pulse_task.cancel()
             await msg.nak()
