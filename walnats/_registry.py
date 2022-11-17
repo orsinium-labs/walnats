@@ -21,6 +21,7 @@ class Events:
     _events: tuple[Event, ...]
 
     def __init__(self, *events: Event) -> None:
+        assert events
         self._events = events
 
     @asynccontextmanager
@@ -28,6 +29,7 @@ class Events:
         self,
         servers: list[str] | str = DEFAULT_SERVER,
     ) -> AsyncIterator[PubConnection]:
+        assert servers
         connection = await nats.connect(servers)
         async with connection:
             js = connection.jetstream()
@@ -39,6 +41,7 @@ class Actors:
     _actors: tuple[Actor, ...]
 
     def __init__(self, *actors: Actor) -> None:
+        assert actors
         self._actors = actors
 
     @asynccontextmanager
@@ -46,6 +49,7 @@ class Actors:
         self,
         servers: list[str] | str = DEFAULT_SERVER,
     ) -> AsyncIterator[SubConnection]:
+        assert servers
         connection = await nats.connect(servers)
         async with connection:
             js = connection.jetstream()

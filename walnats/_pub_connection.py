@@ -22,6 +22,7 @@ class PubConnection:
     async def register(self) -> None:
         """Create nats streams for events.
         """
+        assert self._events
         tasks = []
         for event in self._events:
             task = asyncio.create_task(event._add(self._js))

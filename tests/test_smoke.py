@@ -16,7 +16,7 @@ async def test_smoke() -> None:
     event = walnats.Event(get_random_name(), Model)
     events = walnats.Events(event)
     received: Model | None = None
-    message = Model.construct(name='mark', age=32)
+    message = Model(name='mark', age=32)
 
     async def handler(event: Model) -> None:
         nonlocal received

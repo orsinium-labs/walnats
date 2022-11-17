@@ -55,6 +55,11 @@ class SubConnection:
                 Higher values put more strain on CPU but give better performance
                 if the handlers are IO-bound and use a lot of async/await.
         """
+        assert max_polls is None or max_polls >= 1
+        assert poll_delay >= 0
+        assert batch >= 1
+        assert max_workers >= 1
+
         poll_sem = asyncio.Semaphore(max_polls or len(self._actors))
         worker_sem = asyncio.Semaphore(max_workers)
         tasks: list[asyncio.Task] = []

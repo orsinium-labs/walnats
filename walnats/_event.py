@@ -47,6 +47,7 @@ class Event(Generic[M]):
         description: str | None = None,
         limits: Limits = Limits(),
     ) -> None:
+        assert name
         self._name = name
         self._model = model
         self._serializer = serializer

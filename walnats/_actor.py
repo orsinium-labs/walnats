@@ -24,6 +24,7 @@ class Actor(Generic[M]):
 
     @property
     def consumer_name(self) -> str:
+        assert self.name
         return self.name
 
     @property
