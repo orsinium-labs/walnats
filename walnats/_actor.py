@@ -66,34 +66,51 @@ class Actor(Generic[M]):
             durable=self.consumer_name,
             stream=self.event.stream_name,
         )
-        while True:
-            # don't try polling new messages if there are no workers to handle them
-            if worker_sem.locked():
-                await worker_sem.acquire()
-                worker_sem.release()
+        try:
+            while True:
+                await self._pull_and_handle(
+                    poll_sem=poll_sem,
+                    worker_sem=worker_sem,
+                    poll_delay=poll_delay,
+                    batch=batch,
+                    psub=psub,
+                )
+                if burst:
+                    return
+        finally:
+            await psub.unsubscribe()
 
-            # poll messages
-            async with poll_sem:
-                try:
-                    msgs = await psub.fetch(batch=batch, timeout=poll_delay)
-                except asyncio.TimeoutError:
-                    if burst:
-                        return
-                    continue
+    async def _pull_and_handle(
+        self, *,
+        poll_sem: asyncio.Semaphore,
+        worker_sem: asyncio.Semaphore,
+        poll_delay: float,
+        batch: int,
+        psub: nats.js.JetStreamContext.PullSubscription,
+    ) -> None:
+        # don't try polling new messages if there are no workers to handle them
+        if worker_sem.locked():
+            await worker_sem.acquire()
+            worker_sem.release()
 
-            # run workers
-            tasks: list[asyncio.Task] = []
-            for msg in msgs:
-                coro = self._handle_message(msg, worker_sem)
-                task = asyncio.create_task(coro)
-                tasks.append(task)
+        # poll messages
+        async with poll_sem:
             try:
-                await asyncio.gather(*tasks)
-            except (Exception, asyncio.CancelledError):
-                for task in tasks:
-                    task.cancel()
-            if burst:
+                msgs = await psub.fetch(batch=batch, timeout=poll_delay)
+            except asyncio.TimeoutError:
                 return
+
+        # run workers
+        tasks: list[asyncio.Task] = []
+        for msg in msgs:
+            coro = self._handle_message(msg, worker_sem)
+            task = asyncio.create_task(coro)
+            tasks.append(task)
+        try:
+            await asyncio.gather(*tasks)
+        except (Exception, asyncio.CancelledError):
+            for task in tasks:
+                task.cancel()
 
     async def _handle_message(self, msg: Msg, sem: asyncio.Semaphore) -> None:
         pulse_task = asyncio.create_task(self._pulse(msg))
@@ -108,7 +125,8 @@ class Actor(Generic[M]):
         pulse_task.cancel()
         await msg.ack_sync()
 
-    @staticmethod
-    async def _pulse(msg: Msg) -> None:
+    async def _pulse(self, msg: Msg) -> None:
+        if self.ack_wait is None:
+            return
         while True:
             await msg.in_progress()
