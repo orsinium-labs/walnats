@@ -15,11 +15,8 @@ class Model(pydantic.BaseModel):
 async def test_smoke() -> None:
     event = walnats.Event(get_random_name(), Model)
     events = walnats.Events(event)
-    pub_conn = await events.connect()
-    await pub_conn.register()
-    message = Model.construct(name='mark', age=32)
-
     received: Model | None = None
+    message = Model.construct(name='mark', age=32)
 
     async def handler(event: Model) -> None:
         nonlocal received
@@ -27,10 +24,10 @@ async def test_smoke() -> None:
 
     actor = walnats.Actor(get_random_name(), event, handler)
     actors = walnats.Actors(actor)
-    sub_conn = await actors.connect()
-    await sub_conn.register()
-
-    await pub_conn.emit(event, message)
-    await sub_conn.listen(burst=True)
+    async with events.connect() as pub_conn, actors.connect() as sub_conn:
+        await pub_conn.register()
+        await sub_conn.register()
+        await pub_conn.emit(event, message)
+        await sub_conn.listen(burst=True)
 
     assert received == message

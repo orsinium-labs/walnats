@@ -1,6 +1,7 @@
 from __future__ import annotations
+from contextlib import asynccontextmanager
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, AsyncIterator
 
 import nats
 
@@ -22,10 +23,15 @@ class Events:
     def __init__(self, *events: Event) -> None:
         self._events = events
 
-    async def connect(self, servers: list[str] | str = DEFAULT_SERVER) -> PubConnection:
-        nc = await nats.connect(servers)
-        js = nc.jetstream()
-        return PubConnection(nc, js, self._events)
+    @asynccontextmanager
+    async def connect(
+        self,
+        servers: list[str] | str = DEFAULT_SERVER,
+    ) -> AsyncIterator[PubConnection]:
+        connection = await nats.connect(servers)
+        async with connection:
+            js = connection.jetstream()
+            yield PubConnection(connection, js, self._events)
 
 
 class Actors:
@@ -35,7 +41,12 @@ class Actors:
     def __init__(self, *actors: Actor) -> None:
         self._actors = actors
 
-    async def connect(self, servers: list[str] | str = DEFAULT_SERVER) -> SubConnection:
-        nc = await nats.connect(servers)
-        js = nc.jetstream()
-        return SubConnection(js, self._actors)
+    @asynccontextmanager
+    async def connect(
+        self,
+        servers: list[str] | str = DEFAULT_SERVER,
+    ) -> AsyncIterator[SubConnection]:
+        connection = await nats.connect(servers)
+        async with connection:
+            js = connection.jetstream()
+            yield SubConnection(js, self._actors)

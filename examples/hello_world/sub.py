@@ -14,9 +14,9 @@ async def run_subscriber() -> None:
     actors = walnats.Actors(
         walnats.Actor('print_counter', COUNTER_EVENT, print_counter)
     )
-    conn = await actors.connect(["nats://localhost:4222"])
-    await conn.register()
-    await conn.listen()
+    async with actors.connect() as conn:
+        await conn.register()
+        await conn.listen()
 
 
 if __name__ == '__main__':
