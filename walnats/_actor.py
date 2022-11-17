@@ -10,6 +10,7 @@ from nats.aio.msg import Msg
 
 from ._event import Event
 from ._serializers import Model
+from ._error_handling import ErrorContext, ErrorHandler, log_error
 
 M = TypeVar('M', bound=Model)
 
@@ -21,6 +22,7 @@ class Actor(Generic[M]):
     handler: Callable[[M], Awaitable[None]]
     ack_wait: float | None = None
     max_attempts: int | None = None
+    on_failure: ErrorHandler[M] = log_error
 
     @property
     def consumer_name(self) -> str:
@@ -114,18 +116,22 @@ class Actor(Generic[M]):
 
     async def _handle_message(self, msg: Msg, sem: asyncio.Semaphore) -> None:
         pulse_task = asyncio.create_task(self._pulse(msg))
+        message = None
         try:
             async with sem:
-                event = self.event.serializer.decode(msg.data)
-                await self.handler(event)
+                message = self.event.serializer.decode(msg.data)
+                await self.handler(message)
         except (Exception, asyncio.CancelledError):
             pulse_task.cancel()
             await msg.nak()
-            raise
-        pulse_task.cancel()
-        await msg.ack_sync()
+            await self.on_failure(ErrorContext(actor=self, message=message))
+        else:
+            pulse_task.cancel()
+            await msg.ack_sync()
 
     async def _pulse(self, msg: Msg) -> None:
+        """Keep notifying nats server that the message handling is in progress.
+        """
         if self.ack_wait is None:
             return
         while True:
