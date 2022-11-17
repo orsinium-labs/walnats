@@ -2,6 +2,7 @@
 """
 from ._actor import Actor
 from ._event import Event, Limits
+from ._helpers import run_actors
 from ._pub_connection import PubConnection
 from ._registry import Actors, Events
 from ._sub_connection import SubConnection
@@ -15,4 +16,5 @@ __all__ = [
     'Limits',
     'PubConnection',
     'SubConnection',
+    'run_actors',
 ]
