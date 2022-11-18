@@ -25,10 +25,15 @@ class Actor(Generic[M]):
     name: str
     event: Event[M]
     handler: Callable[[M], Awaitable[None]]
+
+    # settings for the nats consumer
     ack_wait: float | None = None
     max_attempts: int | None = None
+
+    # settings for local job processing
     async_middlewares: tuple[BaseAsyncMiddleware[M], ...] = ()
     sync_middlewares: tuple[BaseSyncMiddleware[M], ...] = ()
+    max_jobs: int = 16
 
     @property
     def consumer_name(self) -> str:
@@ -61,7 +66,7 @@ class Actor(Generic[M]):
         self, *,
         js: nats.js.JetStreamContext,
         poll_sem: asyncio.Semaphore,
-        worker_sem: asyncio.Semaphore,
+        job_sem: asyncio.Semaphore,
         poll_delay: float,
         burst: bool,
         batch: int,
@@ -75,11 +80,13 @@ class Actor(Generic[M]):
             durable=self.consumer_name,
             stream=self.event.stream_name,
         )
+        actor_sem = asyncio.Semaphore(self.max_jobs)
         try:
             while True:
                 await self._pull_and_handle(
                     poll_sem=poll_sem,
-                    worker_sem=worker_sem,
+                    job_sem=job_sem,
+                    actor_sem=actor_sem,
                     poll_delay=poll_delay,
                     batch=batch,
                     psub=psub,
@@ -95,16 +102,20 @@ class Actor(Generic[M]):
     async def _pull_and_handle(
         self, *,
         poll_sem: asyncio.Semaphore,
-        worker_sem: asyncio.Semaphore,
+        job_sem: asyncio.Semaphore,
+        actor_sem: asyncio.Semaphore,
         poll_delay: float,
         batch: int,
         psub: nats.js.JetStreamContext.PullSubscription,
         tasks: Tasks,
     ) -> None:
-        # don't try polling new messages if there are no workers to handle them
-        if worker_sem.locked():
-            await worker_sem.acquire()
-            worker_sem.release()
+        # don't try polling new messages if there are no jobs to handle them
+        if actor_sem.locked():
+            await actor_sem.acquire()
+            actor_sem.release()
+        if job_sem.locked():
+            await job_sem.acquire()
+            job_sem.release()
 
         # poll messages
         async with poll_sem:
@@ -113,21 +124,27 @@ class Actor(Generic[M]):
             except asyncio.TimeoutError:
                 return
 
-        # run workers
+        # run jobs
         for msg in msgs:
-            tasks.start(self._handle_message(msg, worker_sem, tasks))
+            tasks.start(self._handle_message(
+                msg=msg,
+                job_sem=job_sem,
+                actor_sem=actor_sem,
+                tasks=tasks,
+            ))
 
     async def _handle_message(
         self,
         msg: Msg,
-        sem: asyncio.Semaphore,
+        job_sem: asyncio.Semaphore,
+        actor_sem: asyncio.Semaphore,
         tasks: Tasks,
     ) -> None:
         pulse_task = asyncio.create_task(self._pulse(msg))
         event = None
         has_middlewares = bool(self.async_middlewares or self.sync_middlewares)
         try:
-            async with sem:
+            async with actor_sem, job_sem:
                 start = perf_counter()
                 event = self.event.serializer.decode(msg.data)
 

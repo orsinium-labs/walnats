@@ -31,7 +31,7 @@ class SubConnection:
         max_polls: int | None = None,
         poll_delay: float = 2,
         batch: int = 1,
-        max_workers: int = 16,
+        max_jobs: int = 16,
     ) -> None:
         """Listen Nats for events for all registered actors.
 
@@ -49,26 +49,26 @@ class SubConnection:
             batch: how many messages (max) to pull in a single poll request.
                 Higher values reduce the number of network requests (and so give better
                 performance) but can result in messages that wait on a specific instance
-                for a worker to be available while they could be delivered to another
+                for a job to be available while they could be delivered to another
                 instance. In other words, leave it 1 (default) if you scale horizontally.
-            max_workers: how many workers (handlers) can be running at the same time.
+            max_jobs: how many jobs (handlers) can be running at the same time.
                 Higher values put more strain on CPU but give better performance
                 if the handlers are IO-bound and use a lot of async/await.
         """
         assert max_polls is None or max_polls >= 1
         assert poll_delay >= 0
         assert batch >= 1
-        assert max_workers >= 1
+        assert max_jobs >= 1
 
         poll_sem = asyncio.Semaphore(max_polls or len(self._actors))
-        worker_sem = asyncio.Semaphore(max_workers)
+        job_sem = asyncio.Semaphore(max_jobs)
         tasks: list[asyncio.Task] = []
         for actor in self._actors:
             coro = actor._listen(
                 js=self._js,
                 burst=burst,
                 poll_sem=poll_sem,
-                worker_sem=worker_sem,
+                job_sem=job_sem,
                 batch=batch,
                 poll_delay=poll_delay,
             )
