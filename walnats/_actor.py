@@ -4,6 +4,7 @@ from __future__ import annotations
 import asyncio
 from dataclasses import dataclass
 from logging import getLogger
+from time import perf_counter
 from typing import Awaitable, Callable, Generic, TypeVar
 
 import nats.js
@@ -11,8 +12,8 @@ from nats.aio.msg import Msg
 
 from ._event import Event
 from ._serializers import Model
-from ._context import ErrorContext
-from .middlewares import BaseMiddleware
+from ._context import ErrorContext, Context, OkContext
+from .middlewares import BaseAsyncMiddleware, BaseSyncMiddleware
 from ._tasks import Tasks
 
 M = TypeVar('M', bound=Model)
@@ -26,7 +27,8 @@ class Actor(Generic[M]):
     handler: Callable[[M], Awaitable[None]]
     ack_wait: float | None = None
     max_attempts: int | None = None
-    middlewares: tuple[BaseMiddleware, ...] = ()
+    async_middlewares: tuple[BaseAsyncMiddleware[M], ...] = ()
+    sync_middlewares: tuple[BaseSyncMiddleware[M], ...] = ()
 
     @property
     def consumer_name(self) -> str:
@@ -123,20 +125,51 @@ class Actor(Generic[M]):
     ) -> None:
         pulse_task = asyncio.create_task(self._pulse(msg))
         event = None
+        has_middlewares = bool(self.async_middlewares or self.sync_middlewares)
         try:
             async with sem:
+                start = perf_counter()
                 event = self.event.serializer.decode(msg.data)
+
+                # trigger on_start hooks
+                if has_middlewares:
+                    ctx = Context(actor=self, message=event, _msg=msg)
+                    for smw in self.sync_middlewares:
+                        if smw.on_start is not BaseSyncMiddleware.on_start:
+                            smw.on_start(ctx)
+                    for amw in self.async_middlewares:
+                        if amw.on_start is not BaseAsyncMiddleware.on_start:
+                            tasks.start(amw.on_start(ctx))
+
                 await self.handler(event)
         except (Exception, asyncio.CancelledError) as exc:
             pulse_task.cancel()
             logger.exception(f'Unhandled {type(exc).__name__} in "{self.name}" actor')
-            ectx = ErrorContext(actor=self, message=event, exception=exc, _msg=msg)
-            for mw in self.middlewares:
-                tasks.start(mw.on_failure(ectx))
             await msg.nak()
+
+            # trigger on_failure hooks
+            if has_middlewares:
+                ectx = ErrorContext(actor=self, message=event, exception=exc, _msg=msg)
+                for smw in self.sync_middlewares:
+                    if smw.on_failure is not BaseSyncMiddleware.on_failure:
+                        smw.on_failure(ectx)
+                for amw in self.async_middlewares:
+                    if amw.on_failure is not BaseAsyncMiddleware.on_failure:
+                        tasks.start(amw.on_failure(ectx))
         else:
             pulse_task.cancel()
             await msg.ack()
+
+            # trigger on_success hooks
+            if has_middlewares:
+                duration = perf_counter() - start
+                octx = OkContext(actor=self, message=event, _msg=msg, duration=duration)
+                for smw in self.sync_middlewares:
+                    if smw.on_success is not BaseSyncMiddleware.on_success:
+                        smw.on_success(octx)
+                for amw in self.async_middlewares:
+                    if amw.on_success is not BaseAsyncMiddleware.on_success:
+                        tasks.start(amw.on_success(octx))
 
     async def _pulse(self, msg: Msg) -> None:
         """Keep notifying nats server that the message handling is in progress.

@@ -1,6 +1,7 @@
-from ._base import BaseMiddleware
+from ._base import BaseAsyncMiddleware, BaseSyncMiddleware
 
 
 __all__ = [
-    'BaseMiddleware',
+    'BaseAsyncMiddleware',
+    'BaseSyncMiddleware',
 ]
