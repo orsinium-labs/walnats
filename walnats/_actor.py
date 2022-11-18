@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import asyncio
 from dataclasses import dataclass
+from logging import getLogger
 from typing import Awaitable, Callable, Generic, TypeVar
 
 import nats.js
@@ -10,9 +11,11 @@ from nats.aio.msg import Msg
 
 from ._event import Event
 from ._serializers import Model
-from ._error_handling import ErrorContext, ErrorHandler, log_error
+from ._context import ErrorContext
+from .middlewares import BaseMiddleware
 
 M = TypeVar('M', bound=Model)
+logger = getLogger(__package__)
 
 
 @dataclass(frozen=True)
@@ -22,7 +25,7 @@ class Actor(Generic[M]):
     handler: Callable[[M], Awaitable[None]]
     ack_wait: float | None = None
     max_attempts: int | None = None
-    on_failure: ErrorHandler[M] = log_error
+    middlewares: tuple[BaseMiddleware, ...] = ()
 
     @property
     def consumer_name(self) -> str:
@@ -116,15 +119,18 @@ class Actor(Generic[M]):
 
     async def _handle_message(self, msg: Msg, sem: asyncio.Semaphore) -> None:
         pulse_task = asyncio.create_task(self._pulse(msg))
-        message = None
+        event = None
         try:
             async with sem:
-                message = self.event.serializer.decode(msg.data)
-                await self.handler(message)
-        except (Exception, asyncio.CancelledError):
+                event = self.event.serializer.decode(msg.data)
+                await self.handler(event)
+        except (Exception, asyncio.CancelledError) as exc:
             pulse_task.cancel()
+            logger.exception(f'Unhandled {type(exc).__name__} in "{self.name}" actor')
             await msg.nak()
-            await self.on_failure(ErrorContext(actor=self, message=message))
+            ectx = ErrorContext(actor=self, message=event, exception=exc, _msg=msg)
+            for middleware in self.middlewares:
+                await middleware.on_failure(ectx)
         else:
             pulse_task.cancel()
             await msg.ack_sync()
