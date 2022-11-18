@@ -13,6 +13,7 @@ from ._event import Event
 from ._serializers import Model
 from ._context import ErrorContext
 from .middlewares import BaseMiddleware
+from ._tasks import Tasks
 
 M = TypeVar('M', bound=Model)
 logger = getLogger(__package__)
@@ -67,6 +68,7 @@ class Actor(Generic[M]):
 
         See SubConnection.listen for the list of arguments.
         """
+        tasks = Tasks(self.name)
         psub = await js.pull_subscribe_bind(
             durable=self.consumer_name,
             stream=self.event.stream_name,
@@ -79,10 +81,13 @@ class Actor(Generic[M]):
                     poll_delay=poll_delay,
                     batch=batch,
                     psub=psub,
+                    tasks=tasks,
                 )
                 if burst:
+                    await tasks.wait()
                     return
         finally:
+            tasks.cancel()
             await psub.unsubscribe()
 
     async def _pull_and_handle(
@@ -92,6 +97,7 @@ class Actor(Generic[M]):
         poll_delay: float,
         batch: int,
         psub: nats.js.JetStreamContext.PullSubscription,
+        tasks: Tasks,
     ) -> None:
         # don't try polling new messages if there are no workers to handle them
         if worker_sem.locked():
@@ -106,18 +112,15 @@ class Actor(Generic[M]):
                 return
 
         # run workers
-        tasks: list[asyncio.Task] = []
         for msg in msgs:
-            coro = self._handle_message(msg, worker_sem)
-            task = asyncio.create_task(coro)
-            tasks.append(task)
-        try:
-            await asyncio.gather(*tasks)
-        except (Exception, asyncio.CancelledError):
-            for task in tasks:
-                task.cancel()
+            tasks.start(self._handle_message(msg, worker_sem, tasks))
 
-    async def _handle_message(self, msg: Msg, sem: asyncio.Semaphore) -> None:
+    async def _handle_message(
+        self,
+        msg: Msg,
+        sem: asyncio.Semaphore,
+        tasks: Tasks,
+    ) -> None:
         pulse_task = asyncio.create_task(self._pulse(msg))
         event = None
         try:
@@ -127,13 +130,13 @@ class Actor(Generic[M]):
         except (Exception, asyncio.CancelledError) as exc:
             pulse_task.cancel()
             logger.exception(f'Unhandled {type(exc).__name__} in "{self.name}" actor')
-            await msg.nak()
             ectx = ErrorContext(actor=self, message=event, exception=exc, _msg=msg)
-            for middleware in self.middlewares:
-                await middleware.on_failure(ectx)
+            for mw in self.middlewares:
+                tasks.start(mw.on_failure(ectx))
+            await msg.nak()
         else:
             pulse_task.cancel()
-            await msg.ack_sync()
+            await msg.ack()
 
     async def _pulse(self, msg: Msg) -> None:
         """Keep notifying nats server that the message handling is in progress.
