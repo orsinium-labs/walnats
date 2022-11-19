@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from functools import cached_property
 import gzip
 from typing import TYPE_CHECKING, Generic, TypeVar
+import hmac
 
 from ._base import Serializer
 
@@ -43,4 +44,26 @@ class Fernet(Serializer[M], Generic[M]):
 
     def decode(self, data: bytes) -> M:
         data = self._fernet.decrypt(data)
+        return self.serializer.decode(data)
+
+
+@dataclass(frozen=True)
+class HMAC(Serializer[M], Generic[M]):
+    serializer: Serializer[M]
+    key: bytes
+    hash_algorithm: str = 'sha512'
+
+    def encode(self, message: M) -> bytes:
+        data = self.serializer.encode(message)
+        digest = hmac.digest(key=self.key, msg=data, digest=self.hash_algorithm)
+        return digest + data
+
+    def decode(self, data: bytes) -> M:
+        hasher = hmac.HMAC(key=self.key, digestmod=self.hash_algorithm)
+        actual_digest = data[:16]
+        data = data[16:]
+        hasher.update(data)
+        expected_digest = hasher.digest()
+        if not hmac.compare_digest(actual_digest, expected_digest):
+            raise ValueError('the message is corrupted or altered')
         return self.serializer.decode(data)
