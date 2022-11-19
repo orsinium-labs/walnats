@@ -1,6 +1,6 @@
 from __future__ import annotations
-from contextlib import asynccontextmanager
 
+from contextlib import asynccontextmanager
 from typing import TYPE_CHECKING, AsyncIterator
 
 import nats

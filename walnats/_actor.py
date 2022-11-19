@@ -10,10 +10,10 @@ from typing import Awaitable, Callable, Generic, TypeVar
 import nats.js
 from nats.aio.msg import Msg
 
+from ._context import Context, ErrorContext, OkContext
 from ._event import Event
-from ._context import ErrorContext, Context, OkContext
-from .middlewares import BaseAsyncMiddleware, BaseSyncMiddleware
 from ._tasks import Tasks
+from .middlewares import BaseAsyncMiddleware, BaseSyncMiddleware
 
 M = TypeVar('M', bound=object)
 logger = getLogger(__package__)

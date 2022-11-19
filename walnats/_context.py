@@ -1,13 +1,15 @@
 from __future__ import annotations
+
 from dataclasses import dataclass
 from functools import cached_property
-
 from typing import TYPE_CHECKING, Generic, TypeVar
 
 if TYPE_CHECKING:
-    from ._actor import Actor
-    from nats.aio.msg import Msg
     import asyncio
+
+    from nats.aio.msg import Msg
+
+    from ._actor import Actor
 
 
 M = TypeVar('M', bound=object)

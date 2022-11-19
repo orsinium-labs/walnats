@@ -4,6 +4,7 @@ import dataclasses
 import datetime
 import json
 from typing import TYPE_CHECKING
+
 from ._base import Serializer
 
 try:

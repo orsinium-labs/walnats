@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from typing import Coroutine, final
 import asyncio
+from typing import Coroutine, final
 
 
 @final
