@@ -8,9 +8,9 @@ from typing import Generic, TypeVar
 import nats
 import nats.js
 
-from ._serializers import Model, Serializer, get_serializer
+from .serialization import Serializer, get_serializer
 
-M = TypeVar('M', bound='Model')
+M = TypeVar('M')
 
 
 @dataclass(frozen=True)

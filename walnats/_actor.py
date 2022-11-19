@@ -11,12 +11,11 @@ import nats.js
 from nats.aio.msg import Msg
 
 from ._event import Event
-from ._serializers import Model
 from ._context import ErrorContext, Context, OkContext
 from .middlewares import BaseAsyncMiddleware, BaseSyncMiddleware
 from ._tasks import Tasks
 
-M = TypeVar('M', bound=Model)
+M = TypeVar('M', bound=object)
 logger = getLogger(__package__)
 
 

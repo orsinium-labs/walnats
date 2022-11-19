@@ -8,9 +8,8 @@ import nats
 import nats.js
 
 from ._event import Event
-from ._serializers import Model
 
-M = TypeVar('M', bound=Model)
+M = TypeVar('M')
 
 
 @dataclass(frozen=True)
@@ -33,8 +32,8 @@ class PubConnection:
         payload = event.serializer.encode(message)
         await self._nc.publish(event.subject_name, payload)
 
-    async def monitor(self) -> AsyncIterator[Model]:
-        queue: asyncio.Queue[Model] = asyncio.Queue()
+    async def monitor(self) -> AsyncIterator[object]:
+        queue: asyncio.Queue[object] = asyncio.Queue()
         tasks: list[asyncio.Task] = []
         for event in self._events:
             task = asyncio.create_task(event._monitor(self._nc, queue))
