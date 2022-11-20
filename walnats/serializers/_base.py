@@ -3,19 +3,19 @@ from __future__ import annotations
 import dataclasses
 from typing import Generic, TypeVar
 
-M = TypeVar('M')
+T = TypeVar('T')
 
 
 @dataclasses.dataclass(frozen=True)
-class Serializer(Generic[M]):
-    model: type[M]
+class Serializer(Generic[T]):
+    schema: type[T]
 
     @classmethod
-    def new(cls, model: type[M]) -> Serializer[M] | None:
+    def new(cls, schema: type[T]) -> Serializer[T] | None:
         raise NotImplementedError
 
-    def encode(self, message: M) -> bytes:
+    def encode(self, message: T) -> bytes:
         raise NotImplementedError
 
-    def decode(self, data: bytes) -> M:
+    def decode(self, data: bytes) -> T:
         raise NotImplementedError

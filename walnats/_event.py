@@ -33,7 +33,7 @@ class Limits:
 
 class Event(Generic[M]):
     _name: str
-    _model: type[M]
+    _schema: type[M]
     _description: str | None = None
     _limits: Limits = Limits()
     _serializer: Serializer[M] | None
@@ -41,7 +41,7 @@ class Event(Generic[M]):
     def __init__(
         self,
         name: str,
-        model: type[M],
+        schema: type[M],
         *,
         serializer: Serializer[M] | None = None,
         description: str | None = None,
@@ -49,7 +49,7 @@ class Event(Generic[M]):
     ) -> None:
         assert name
         self._name = name
-        self._model = model
+        self._schema = schema
         self._serializer = serializer
         self._description = description
         self._limits = limits
@@ -65,7 +65,7 @@ class Event(Generic[M]):
     @cached_property
     def serializer(self) -> Serializer[M]:
         if self._serializer is None:
-            return get_serializer(self._model)
+            return get_serializer(self._schema)
         return self.serializer
 
     @property

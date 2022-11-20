@@ -27,33 +27,33 @@ if TYPE_CHECKING:
 class PydanticSerializer(Serializer['BaseModel']):
     """Serialize pydantic models as JSON.
     """
-    model: type[BaseModel]
+    schema: type[BaseModel]
 
     @classmethod
-    def new(cls, model: type[object]) -> PydanticSerializer | None:
+    def new(cls, schema: type[object]) -> PydanticSerializer | None:
         if pydantic is None:
             return None
-        if not issubclass(model, pydantic.BaseModel):
+        if not issubclass(schema, pydantic.BaseModel):
             return None
-        return cls(model)
+        return cls(schema)
 
     def encode(self, message: BaseModel) -> bytes:
         return message.json().encode()
 
     def decode(self, data: bytes) -> BaseModel:
-        return self.model.parse_raw(data)
+        return self.schema.parse_raw(data)
 
 
 @dataclasses.dataclass(frozen=True)
 class DataclassSerializer(Serializer[object]):
     """Serialize dataclass classes as JSON.
     """
-    model: type[object]
+    schema: type[object]
 
     @classmethod
-    def new(cls, model: type[object]) -> DataclassSerializer | None:
-        if dataclasses.is_dataclass(model):
-            return cls(model)
+    def new(cls, schema: type[object]) -> DataclassSerializer | None:
+        if dataclasses.is_dataclass(schema):
+            return cls(schema)
         return None
 
     def encode(self, message: object) -> bytes:
@@ -62,19 +62,19 @@ class DataclassSerializer(Serializer[object]):
 
     def decode(self, data: bytes) -> object:
         payload = json.loads(data)
-        return self.model(**payload)
+        return self.schema(**payload)
 
 
 @dataclasses.dataclass(frozen=True)
 class BytesSerializer(Serializer[bytes]):
     """Assume bytes to be already serialized, emit it as is.
     """
-    model: type[bytes]
+    schema: type[bytes]
 
     @classmethod
-    def new(cls, model: type[object]) -> BytesSerializer | None:
-        if issubclass(model, bytes):
-            return cls(model)
+    def new(cls, schema: type[object]) -> BytesSerializer | None:
+        if issubclass(schema, bytes):
+            return cls(schema)
         return None
 
     def encode(self, message: bytes) -> bytes:
@@ -88,15 +88,15 @@ class BytesSerializer(Serializer[bytes]):
 class PrimitiveSerializer(Serializer[object]):
     """Serialize built-in types as JSON.
     """
-    model: type[object]
+    schema: type[object]
 
     @classmethod
-    def new(cls, model: type[object]) -> PrimitiveSerializer | None:
+    def new(cls, schema: type[object]) -> PrimitiveSerializer | None:
         # tuple and set aren't supported by JSON, will be converted into list,
         # and so won't survive roundtrip. Hence it's better not to support them
         # and let the user convert the message type. Otherwise, we won't get type safety.
-        if issubclass(model, (str, int, float, list, dict, bool)):
-            return cls(model)
+        if issubclass(schema, (str, int, float, list, dict, bool)):
+            return cls(schema)
         return None
 
     def encode(self, message: object) -> bytes:
@@ -110,40 +110,40 @@ class PrimitiveSerializer(Serializer[object]):
 class DatetimeSerializer(Serializer[datetime.datetime | datetime.date]):
     """Serialize built-in types as JSON.
     """
-    model: type[datetime.datetime | datetime.date]
+    schema: type[datetime.datetime | datetime.date]
 
     @classmethod
-    def new(cls, model: type[object]) -> DatetimeSerializer | None:
+    def new(cls, schema: type[object]) -> DatetimeSerializer | None:
         # tuple and set aren't supported by JSON, will be converted into list,
         # and so won't survive roundtrip. Hence it's better not to support them
         # and let the user convert the message type. Otherwise, we won't get type safety.
-        if issubclass(model, (datetime.datetime, datetime.date)):
-            return cls(model)
+        if issubclass(schema, (datetime.datetime, datetime.date)):
+            return cls(schema)
         return None
 
     def encode(self, message: datetime.datetime | datetime.date) -> bytes:
         return message.isoformat().encode()
 
     def decode(self, data: bytes) -> datetime.datetime | datetime.date:
-        return self.model.fromisoformat(data.decode())
+        return self.schema.fromisoformat(data.decode())
 
 
 @dataclasses.dataclass(frozen=True)
 class ProtobufSerializer(Serializer['ProtobufMessage']):
     """Serialize protobuf messages.
     """
-    model: type[ProtobufMessage]
+    schema: type[ProtobufMessage]
 
     @classmethod
-    def new(cls, model: type[object]) -> ProtobufSerializer | None:
+    def new(cls, schema: type[object]) -> ProtobufSerializer | None:
         if protobuf is None:
             return None
-        if issubclass(model, protobuf.Message):
-            return cls(model)
+        if issubclass(schema, protobuf.Message):
+            return cls(schema)
         return None
 
     def encode(self, message: ProtobufMessage) -> bytes:
         return message.SerializeToString()
 
     def decode(self, data: bytes) -> ProtobufMessage:
-        return self.model.FromString(data)
+        return self.schema.FromString(data)

@@ -12,12 +12,12 @@ SERIALIZERS: tuple[type[Serializer], ...] = (
     ss.PrimitiveSerializer,
 )
 
-M = TypeVar('M')
+T = TypeVar('T')
 
 
-def get_serializer(model: type[M]) -> Serializer[M]:
+def get_serializer(schema: type[T]) -> Serializer[T]:
     for serializer_class in SERIALIZERS:
-        serializer = serializer_class.new(model)
+        serializer = serializer_class.new(schema)
         if serializer is not None:
             return serializer
-    raise RuntimeError(f'cannot find serializer for {model.__qualname__}')
+    raise RuntimeError(f'cannot find serializer for {schema.__name__}')

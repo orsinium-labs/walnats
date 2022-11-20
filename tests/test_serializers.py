@@ -31,8 +31,8 @@ class Dataclass:
 ])
 def test_roundtrip(message) -> None:
     assert message == message
-    model = type(message)
-    ser = get_serializer(model)
+    schema = type(message)
+    ser = get_serializer(schema)
     enc = ser.encode(message)
     dec = ser.decode(enc)
     assert message == dec
