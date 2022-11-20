@@ -4,7 +4,7 @@ from dataclasses import dataclass
 import pydantic
 import pytest
 
-from walnats.serialization import get_serializer
+from walnats.serializers import get_serializer
 
 
 class Pydantic(pydantic.BaseModel):
