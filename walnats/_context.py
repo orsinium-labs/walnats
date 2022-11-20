@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from functools import cached_property
 from typing import TYPE_CHECKING, Generic, TypeVar
 
+
 if TYPE_CHECKING:
     import asyncio
 

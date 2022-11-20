@@ -1,6 +1,10 @@
 from __future__ import annotations
+
 from dataclasses import dataclass
+
 from ._base import Serializer
+
+
 try:
     import msgpack
 except ImportError:

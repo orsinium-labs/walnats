@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING
 import nats
 import nats.js
 
+
 if TYPE_CHECKING:
     from ._actor import Actor
 

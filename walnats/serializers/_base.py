@@ -3,6 +3,7 @@ from __future__ import annotations
 import dataclasses
 from typing import Generic, TypeVar
 
+
 T = TypeVar('T')
 
 

@@ -8,6 +8,7 @@ import nats
 from ._pub_connection import PubConnection
 from ._sub_connection import SubConnection
 
+
 if TYPE_CHECKING:
     from ._actor import Actor
     from ._event import Event

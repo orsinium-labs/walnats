@@ -8,6 +8,7 @@ from ._pub_connection import PubConnection
 from ._registry import Actors, Events
 from ._sub_connection import SubConnection
 
+
 __version__ = '0.1.0'
 __all__ = [
     'Actor',

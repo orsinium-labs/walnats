@@ -1,11 +1,13 @@
 from __future__ import annotations
+
+import gzip
+import hmac
 from dataclasses import dataclass
 from functools import cached_property
-import gzip
 from typing import TYPE_CHECKING, Generic, TypeVar
-import hmac
 
 from ._base import Serializer
+
 
 if TYPE_CHECKING:
     from cryptography.fernet import Fernet as _Fernet

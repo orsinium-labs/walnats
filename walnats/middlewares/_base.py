@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Generic, TypeVar
 
+
 if TYPE_CHECKING:
     from .._context import Context, ErrorContext, OkContext
 

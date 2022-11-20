@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING
 
 from ._base import Serializer
 
+
 try:
     import pydantic
 except ImportError:
@@ -19,8 +20,8 @@ except ImportError:
 
 
 if TYPE_CHECKING:
-    from pydantic import BaseModel
     from google.protobuf.message import Message as ProtobufMessage
+    from pydantic import BaseModel
 
 
 @dataclasses.dataclass(frozen=True)

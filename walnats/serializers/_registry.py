@@ -3,6 +3,7 @@ from typing import TypeVar
 from . import _serializers as ss
 from ._base import Serializer
 
+
 SERIALIZERS: tuple[type[Serializer], ...] = (
     ss.PydanticSerializer,
     ss.ProtobufSerializer,

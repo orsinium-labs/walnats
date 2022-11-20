@@ -15,6 +15,7 @@ from ._event import Event
 from ._tasks import Tasks
 from .middlewares import BaseAsyncMiddleware, BaseSyncMiddleware
 
+
 M = TypeVar('M', bound=object)
 logger = getLogger(__package__)
 

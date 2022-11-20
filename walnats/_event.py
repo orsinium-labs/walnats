@@ -10,6 +10,7 @@ import nats.js
 
 from .serializers import Serializer, get_serializer
 
+
 M = TypeVar('M')
 
 

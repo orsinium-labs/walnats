@@ -9,6 +9,7 @@ import nats.js
 
 from ._event import Event
 
+
 M = TypeVar('M')
 
 
