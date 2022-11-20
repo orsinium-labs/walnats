@@ -11,7 +11,7 @@ import nats.js
 from .serializers import Serializer, get_serializer
 
 
-M = TypeVar('M')
+T = TypeVar('T')
 
 
 @dataclass(frozen=True)
@@ -32,28 +32,28 @@ class Limits:
     message_size: int | None = None
 
 
-class Event(Generic[M]):
+class Event(Generic[T]):
     _name: str
-    _schema: type[M]
+    _schema: type[T]
     _description: str | None = None
     _limits: Limits = Limits()
-    _serializer: Serializer[M] | None
 
     def __init__(
         self,
         name: str,
-        schema: type[M],
+        schema: type[T],
         *,
-        serializer: Serializer[M] | None = None,
+        serializer: Serializer[T] | None = None,
         description: str | None = None,
         limits: Limits = Limits(),
     ) -> None:
         assert name
         self._name = name
         self._schema = schema
-        self._serializer = serializer
         self._description = description
         self._limits = limits
+        if serializer is not None:
+            self.serializer = serializer
 
     @property
     def subject_name(self) -> str:
@@ -64,10 +64,8 @@ class Event(Generic[M]):
         return self._name
 
     @cached_property
-    def serializer(self) -> Serializer[M]:
-        if self._serializer is None:
-            return get_serializer(self._schema)
-        return self.serializer
+    def serializer(self) -> Serializer[T]:
+        return get_serializer(self._schema)
 
     @property
     def _stream_config(self) -> nats.js.api.StreamConfig:
@@ -91,7 +89,7 @@ class Event(Generic[M]):
     async def _add(self, js: nats.js.JetStreamContext) -> None:
         await js.add_stream(self._stream_config)
 
-    async def _monitor(self, nc: nats.NATS, q: asyncio.Queue[M]) -> None:
+    async def _monitor(self, nc: nats.NATS, q: asyncio.Queue[T]) -> None:
         sub = await nc.subscribe('count')
         async for msg in sub.messages:
             event = self.serializer.decode(msg.data)
