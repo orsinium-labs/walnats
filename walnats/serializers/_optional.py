@@ -8,7 +8,7 @@ except ImportError:
 
 
 @dataclass(frozen=True)
-class MsgpackSerializer(Serializer[object]):
+class MessagePackSerializer(Serializer[object]):
     """Serialize built-in types as msgpack message.
     """
     schema: type[object] = object

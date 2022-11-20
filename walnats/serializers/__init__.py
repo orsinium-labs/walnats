@@ -3,7 +3,7 @@ from ._registry import get_serializer
 from ._serializers import (BytesSerializer, DataclassSerializer,
                            DatetimeSerializer, PrimitiveSerializer,
                            PydanticSerializer, ProtobufSerializer)
-from ._optional import MsgpackSerializer
+from ._optional import MessagePackSerializer
 from ._wrappers import GZip, HMAC, Fernet
 
 __all__ = [
@@ -14,7 +14,7 @@ __all__ = [
     'BytesSerializer',
     'DataclassSerializer',
     'DatetimeSerializer',
-    'MsgpackSerializer',
+    'MessagePackSerializer',
     'PrimitiveSerializer',
     'ProtobufSerializer',
     'PydanticSerializer',
