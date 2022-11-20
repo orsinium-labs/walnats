@@ -38,7 +38,7 @@ class PydanticSerializer(Serializer['BaseModel']):
         return cls(schema)
 
     def encode(self, message: BaseModel) -> bytes:
-        return message.json().encode()
+        return message.json(separators=(',', ':')).encode()
 
     def decode(self, data: bytes) -> BaseModel:
         return self.schema.parse_raw(data)
@@ -58,7 +58,7 @@ class DataclassSerializer(Serializer[object]):
 
     def encode(self, message: object) -> bytes:
         payload = dataclasses.asdict(message)
-        return json.dumps(payload).encode()
+        return json.dumps(payload, separators=(',', ':')).encode()
 
     def decode(self, data: bytes) -> object:
         payload = json.loads(data)
@@ -100,7 +100,7 @@ class PrimitiveSerializer(Serializer[object]):
         return None
 
     def encode(self, message: object) -> bytes:
-        return json.dumps(message).encode()
+        return json.dumps(message, separators=(',', ':')).encode()
 
     def decode(self, data: bytes) -> object:
         return json.loads(data)
