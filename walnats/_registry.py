@@ -47,10 +47,17 @@ class Actors:
     @asynccontextmanager
     async def connect(
         self,
-        servers: list[str] | str = DEFAULT_SERVER,
+        server: list[str] | str | nats.NATS = DEFAULT_SERVER,
+        close: bool = True,
     ) -> AsyncIterator[SubConnection]:
-        assert servers
-        connection = await nats.connect(servers)
-        async with connection:
+        if isinstance(server, nats.NATS):
+            connection = server
+        else:
+            assert server
+            connection = await nats.connect(server)
+        try:
             js = connection.jetstream()
             yield SubConnection(js, self._actors)
+        finally:
+            if close:
+                await connection.close()
