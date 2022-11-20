@@ -18,9 +18,15 @@ try:
 except ImportError:
     protobuf = None  # type: ignore[assignment]
 
+try:
+    import marshmallow
+except ImportError:
+    marshmallow = None  # type: ignore[assignment]
+
 
 if TYPE_CHECKING:
     from google.protobuf.message import Message as ProtobufMessage
+    from marshmallow import Schema as MarshmallowSchema
     from pydantic import BaseModel
 
 
@@ -64,6 +70,27 @@ class DataclassSerializer(Serializer[object]):
     def decode(self, data: bytes) -> object:
         payload = json.loads(data)
         return self.schema(**payload)
+
+
+@dataclasses.dataclass(frozen=True)
+class MarshmallowSerializer(Serializer['MarshmallowSchema']):
+    """Serialize marshmallow schemas as JSON.
+    """
+    schema: type[MarshmallowSchema]
+
+    @classmethod
+    def new(cls, schema: type[object]) -> MarshmallowSerializer | None:
+        if marshmallow is None:
+            return None
+        if not issubclass(schema, marshmallow.Schema):
+            return None
+        return cls(schema)
+
+    def encode(self, message: MarshmallowSchema) -> bytes:
+        return self.schema().dumps(message).encode(encoding='utf8')
+
+    def decode(self, data: bytes) -> MarshmallowSchema:
+        return self.schema().loads(data.decode(encoding='utf8'))
 
 
 @dataclasses.dataclass(frozen=True)

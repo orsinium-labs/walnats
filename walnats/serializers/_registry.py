@@ -13,6 +13,7 @@ SERIALIZERS: tuple[type[Serializer], ...] = (
     ss.BytesSerializer,
     ss.DatetimeSerializer,
     ss.PrimitiveSerializer,
+    ss.MarshmallowSerializer,
 )
 
 T = TypeVar('T')
