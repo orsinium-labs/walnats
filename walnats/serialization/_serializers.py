@@ -12,8 +12,15 @@ try:
 except ImportError:
     pydantic = None  # type: ignore[assignment]
 
+try:
+    import google.protobuf.message as protobuf
+except ImportError:
+    protobuf = None  # type: ignore[assignment]
+
+
 if TYPE_CHECKING:
     from pydantic import BaseModel
+    from google.protobuf.message import Message as ProtobufMessage
 
 
 @dataclasses.dataclass(frozen=True)
@@ -119,3 +126,24 @@ class DatetimeSerializer(Serializer[datetime.datetime | datetime.date]):
 
     def decode(self, data: bytes) -> datetime.datetime | datetime.date:
         return self.model.fromisoformat(data.decode())
+
+
+@dataclasses.dataclass(frozen=True)
+class ProtobufSerializer(Serializer['ProtobufMessage']):
+    """Serialize protobuf messages.
+    """
+    model: type[ProtobufMessage]
+
+    @classmethod
+    def new(cls, model: type[object]) -> ProtobufSerializer | None:
+        if protobuf is None:
+            return None
+        if issubclass(model, protobuf.Message):
+            return cls(model)
+        return None
+
+    def encode(self, message: ProtobufMessage) -> bytes:
+        return message.SerializeToString()
+
+    def decode(self, data: bytes) -> ProtobufMessage:
+        return self.model.FromString(data)

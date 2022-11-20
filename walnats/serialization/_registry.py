@@ -5,6 +5,7 @@ from ._base import Serializer
 
 SERIALIZERS: tuple[type[Serializer], ...] = (
     ss.PydanticSerializer,
+    ss.ProtobufSerializer,
     ss.DataclassSerializer,
     ss.BytesSerializer,
     ss.DatetimeSerializer,
