@@ -8,7 +8,7 @@ from ._base import Serializer
 try:
     import msgpack
 except ImportError:
-    msgpack = None  # type: ignore[assignment]
+    msgpack = None
 
 
 @dataclass(frozen=True)

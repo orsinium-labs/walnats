@@ -152,11 +152,9 @@ class Actor(Generic[M]):
                 if has_middlewares:
                     ctx = Context(actor=self, message=event, _msg=msg)
                     for smw in self.sync_middlewares:
-                        if smw.on_start is not BaseSyncMiddleware.on_start:
-                            smw.on_start(ctx)
+                        smw.on_start(ctx)
                     for amw in self.async_middlewares:
-                        if amw.on_start is not BaseAsyncMiddleware.on_start:
-                            tasks.start(amw.on_start(ctx))
+                        tasks.start(amw.on_start(ctx))
 
                 await self.handler(event)
         except (Exception, asyncio.CancelledError) as exc:
@@ -168,11 +166,9 @@ class Actor(Generic[M]):
             if has_middlewares:
                 ectx = ErrorContext(actor=self, message=event, exception=exc, _msg=msg)
                 for smw in self.sync_middlewares:
-                    if smw.on_failure is not BaseSyncMiddleware.on_failure:
-                        smw.on_failure(ectx)
+                    smw.on_failure(ectx)
                 for amw in self.async_middlewares:
-                    if amw.on_failure is not BaseAsyncMiddleware.on_failure:
-                        tasks.start(amw.on_failure(ectx))
+                    tasks.start(amw.on_failure(ectx))
         else:
             pulse_task.cancel()
             await msg.ack()
@@ -182,11 +178,9 @@ class Actor(Generic[M]):
                 duration = perf_counter() - start
                 octx = OkContext(actor=self, message=event, _msg=msg, duration=duration)
                 for smw in self.sync_middlewares:
-                    if smw.on_success is not BaseSyncMiddleware.on_success:
-                        smw.on_success(octx)
+                    smw.on_success(octx)
                 for amw in self.async_middlewares:
-                    if amw.on_success is not BaseAsyncMiddleware.on_success:
-                        tasks.start(amw.on_success(octx))
+                    tasks.start(amw.on_success(octx))
 
     async def _pulse(self, msg: Msg) -> None:
         """Keep notifying nats server that the message handling is in progress.
