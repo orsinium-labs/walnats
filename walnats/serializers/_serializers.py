@@ -108,7 +108,7 @@ class PrimitiveSerializer(Serializer[object]):
 
 @dataclasses.dataclass(frozen=True)
 class DatetimeSerializer(Serializer[datetime.datetime | datetime.date]):
-    """Serialize built-in types as JSON.
+    """Serialize datetime or date in ISO 8601 string.
     """
     schema: type[datetime.datetime | datetime.date]
 
