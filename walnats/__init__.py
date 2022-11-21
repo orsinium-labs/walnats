@@ -1,12 +1,11 @@
 """Nats-based event-driven background jobs and microservices framework.
 """
 from . import middlewares, serializers
-from ._actor import Actor
+from ._actors import Actor, SubConnection, Actors
 from ._event import Event, Limits
 from ._helpers import run_actors
 from ._pub_connection import PubConnection
-from ._registry import Actors, Events
-from ._sub_connection import SubConnection
+from ._registry import Events
 
 
 __version__ = '0.1.0'

@@ -1,7 +1,6 @@
 from typing import Any
 
-from ._actor import Actor
-from ._registry import Actors
+from ._actors import Actor, Actors
 
 
 async def run_actors(*actors: Actor, **kwargs: Any) -> None:

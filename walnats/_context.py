@@ -10,7 +10,7 @@ if TYPE_CHECKING:
 
     from nats.aio.msg import Msg
 
-    from ._actor import Actor
+    from ._actors import Actor
 
 
 M = TypeVar('M', bound=object)
