@@ -2,7 +2,7 @@
 """
 from . import middlewares, serializers
 from ._actors import Actor, Actors, SubConnection
-from ._events import Event, Events, Limits, PubConnection
+from ._events import ConnectedEvents, Event, Events, Limits
 from ._helpers import run_actors
 
 
@@ -13,7 +13,7 @@ __all__ = [
     'Event',
     'Events',
     'Limits',
-    'PubConnection',
+    'ConnectedEvents',
     'SubConnection',
     'run_actors',
     'serializers',

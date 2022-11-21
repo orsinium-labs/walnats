@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, AsyncIterator
 
 import nats
 
-from ._pub_connection import PubConnection
+from ._connection import ConnectedEvents
 
 
 if TYPE_CHECKING:
@@ -27,9 +27,9 @@ class Events:
     async def connect(
         self,
         servers: list[str] | str = DEFAULT_SERVER,
-    ) -> AsyncIterator[PubConnection]:
+    ) -> AsyncIterator[ConnectedEvents]:
         assert servers
         connection = await nats.connect(servers)
         async with connection:
             js = connection.jetstream()
-            yield PubConnection(connection, js, self._events)
+            yield ConnectedEvents(connection, js, self._events)

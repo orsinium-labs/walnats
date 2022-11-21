@@ -15,7 +15,7 @@ R = TypeVar('R')
 
 
 @dataclass(frozen=True)
-class PubConnection:
+class ConnectedEvents:
     _nc: nats.NATS
     _js: nats.js.JetStreamContext
     _events: tuple[BaseEvent, ...]

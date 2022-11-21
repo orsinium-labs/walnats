@@ -159,7 +159,7 @@ class Event(BaseEvent[T, None]):
         schema: type[R],
         serializer: Serializer[R] | None = None,
     ) -> EventWithResponse[T, R]:
-        """Create a copy of the Event that can be used with PubConnection.request.
+        """Create a copy of the Event that can be used with ConnectedEvents.request.
 
         The same copy must be used with the Actor.
         Otherwise, the response won't be emitted.
