@@ -12,6 +12,7 @@ from .serializers import Serializer, get_serializer
 
 
 T = TypeVar('T')
+R = TypeVar('R')
 
 
 @dataclass(frozen=True)
@@ -32,11 +33,7 @@ class Limits:
     message_size: int | None = None
 
 
-class Event(Generic[T]):
-    _name: str
-    _schema: type[T]
-    _description: str | None = None
-    _limits: Limits = Limits()
+class BaseEvent(Generic[T, R]):
 
     def __init__(
         self,
@@ -97,3 +94,37 @@ class Event(Generic[T]):
 
     def __repr__(self) -> str:
         return f'{type(self).__name__}({repr(self._name)}, ...)'
+
+
+class EventWithResponse(BaseEvent[T, R]):
+    def __init__(
+        self,
+        response_schema: type[R],
+        response_serializer: Serializer[R] | None,
+        **kwargs,
+    ) -> None:
+        self._response_schema = response_schema
+        if response_serializer is not None:
+            self.response_serializer = response_serializer
+        super().__init__(**kwargs)
+
+    @cached_property
+    def response_serializer(self) -> Serializer[R]:
+        return get_serializer(self._response_schema)
+
+
+class Event(BaseEvent[T, None]):
+    def with_response(
+        self,
+        schema: type[R],
+        serializer: Serializer[R] | None = None,
+    ) -> EventWithResponse[T, R]:
+        return EventWithResponse(
+            response_schema=schema,
+            response_serializer=serializer,
+            name=self._name,
+            schema=self._schema,
+            description=self._description,
+            limits=self._limits,
+            serializer=self.serializer,
+        )

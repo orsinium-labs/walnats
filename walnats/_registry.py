@@ -11,7 +11,7 @@ from ._sub_connection import SubConnection
 
 if TYPE_CHECKING:
     from ._actor import Actor
-    from ._event import Event
+    from ._event import BaseEvent
 
 
 DEFAULT_SERVER = 'nats://localhost:4222'
@@ -19,9 +19,9 @@ DEFAULT_SERVER = 'nats://localhost:4222'
 
 class Events:
     __slots__ = ['_events']
-    _events: tuple[Event, ...]
+    _events: tuple[BaseEvent, ...]
 
-    def __init__(self, *events: Event) -> None:
+    def __init__(self, *events: BaseEvent) -> None:
         assert events
         self._events = events
 

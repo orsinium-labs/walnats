@@ -11,28 +11,29 @@ import nats.js
 from nats.aio.msg import Msg
 
 from ._context import Context, ErrorContext, OkContext
-from ._event import Event
+from ._event import BaseEvent, EventWithResponse
 from ._tasks import Tasks
 from .middlewares import BaseAsyncMiddleware, BaseSyncMiddleware
 
 
-M = TypeVar('M', bound=object)
+T = TypeVar('T')
+R = TypeVar('R')
 logger = getLogger(__package__)
 
 
 @dataclass(frozen=True)
-class Actor(Generic[M]):
+class Actor(Generic[T, R]):
     name: str
-    event: Event[M]
-    handler: Callable[[M], Awaitable[None]]
+    event: BaseEvent[T, R]
+    handler: Callable[[T], Awaitable[R]]
 
     # settings for the nats consumer
     ack_wait: float | None = None
     max_attempts: int | None = None
 
     # settings for local job processing
-    async_middlewares: tuple[BaseAsyncMiddleware[M], ...] = ()
-    sync_middlewares: tuple[BaseSyncMiddleware[M], ...] = ()
+    async_middlewares: tuple[BaseAsyncMiddleware[T], ...] = ()
+    sync_middlewares: tuple[BaseSyncMiddleware[T], ...] = ()
     max_jobs: int = 16
 
     @property
@@ -156,11 +157,11 @@ class Actor(Generic[M]):
                     for amw in self.async_middlewares:
                         tasks.start(amw.on_start(ctx))
 
-                await self.handler(event)
+                result = await self.handler(event)
         except (Exception, asyncio.CancelledError) as exc:
             pulse_task.cancel()
             logger.exception(f'Unhandled {type(exc).__name__} in "{self.name}" actor')
-            await msg.nak()
+            tasks.start(msg.nak())
 
             # trigger on_failure hooks
             if has_middlewares:
@@ -172,6 +173,10 @@ class Actor(Generic[M]):
         else:
             pulse_task.cancel()
             await msg.ack()
+
+            if isinstance(self.event, EventWithResponse):
+                payload = self.event.response_serializer.encode(result)
+                tasks.start(msg.respond(payload))
 
             # trigger on_success hooks
             if has_middlewares:

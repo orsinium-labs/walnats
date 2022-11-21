@@ -34,7 +34,7 @@ test = ["pytest", "pytest-cov"]
 Source = "https://github.com/orsinium-labs/walnats"
 
 [tool.mypy]
-files = ["walnats"]
+files = ["walnats", "tests"]
 python_version = 3.8
 ignore_missing_imports = true
 # follow_imports = "silent"

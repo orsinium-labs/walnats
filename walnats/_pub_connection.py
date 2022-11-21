@@ -7,17 +7,18 @@ from typing import AsyncIterator, TypeVar
 import nats
 import nats.js
 
-from ._event import Event
+from ._event import BaseEvent, Event, EventWithResponse
 
 
-M = TypeVar('M')
+T = TypeVar('T')
+R = TypeVar('R')
 
 
 @dataclass(frozen=True)
 class PubConnection:
     _nc: nats.NATS
     _js: nats.js.JetStreamContext
-    _events: tuple[Event, ...]
+    _events: tuple[BaseEvent, ...]
 
     async def register(self) -> None:
         """Create nats streams for events.
@@ -29,9 +30,15 @@ class PubConnection:
             tasks.append(task)
         await asyncio.gather(*tasks)
 
-    async def emit(self, event: Event[M], message: M) -> None:
+    async def emit(self, event: Event[T], message: T) -> None:
         payload = event.serializer.encode(message)
         await self._nc.publish(event.subject_name, payload)
+
+    async def _request(self, event: EventWithResponse[T, R], message: T) -> R:
+        payload = event.serializer.encode(message)
+        msg = await self._nc.request(event.subject_name, payload)
+        resp = event.response_serializer.decode(msg.data)
+        return resp
 
     async def monitor(self) -> AsyncIterator[object]:
         queue: asyncio.Queue[object] = asyncio.Queue()
