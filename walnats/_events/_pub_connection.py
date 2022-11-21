@@ -21,7 +21,7 @@ class PubConnection:
     _events: tuple[BaseEvent, ...]
 
     async def register(self) -> None:
-        """Create nats streams for events.
+        """Create Nats JetStream streams for registered events.
         """
         assert self._events
         tasks = []
@@ -31,6 +31,8 @@ class PubConnection:
         await asyncio.gather(*tasks)
 
     async def emit(self, event: Event[T], message: T) -> None:
+        """Send an event into Nats. The event must be registered first.
+        """
         payload = event.serializer.encode(message)
         await self._nc.publish(event.subject_name, payload)
 
@@ -41,6 +43,11 @@ class PubConnection:
         return resp
 
     async def monitor(self) -> AsyncIterator[object]:
+        """Listen to all registered events and emit them.
+
+        Events emitted while you don't listen won't be remembered.
+        In other words, it's a live feed. Useful for debugging.
+        """
         queue: asyncio.Queue[object] = asyncio.Queue()
         tasks: list[asyncio.Task] = []
         for event in self._events:
