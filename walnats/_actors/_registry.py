@@ -16,6 +16,8 @@ DEFAULT_SERVER = 'nats://localhost:4222'
 
 
 class Actors:
+    """Registry of Actor instances.
+    """
     __slots__ = ['_actors']
     _actors: tuple[Actor, ...]
 
@@ -23,17 +25,34 @@ class Actors:
         assert actors
         self._actors = actors
 
+    def get(self, name: str) -> Actor | None:
+        """Get an Actor from the list of registered actors by name.
+        """
+        for actor in self._actors:
+            if actor.name == name:
+                return actor
+        return None
+
     @asynccontextmanager
     async def connect(
         self,
         server: list[str] | str | nats.NATS = DEFAULT_SERVER,
         close: bool = True,
     ) -> AsyncIterator[SubConnection]:
+        """Context manager that keeps connection to Nats server.
+
+        Args:
+            server: Nats server URL, list of URLs, or already connected server.
+            close: Close the connection on exit from the context.
+                Set to False if you explicitly pass a server instance and want
+                to keep using it after leaving the context.
+        """
         if isinstance(server, nats.NATS):
             connection = server
         else:
             assert server
             connection = await nats.connect(server)
+        assert not connection.is_closed
         try:
             js = connection.jetstream()
             yield SubConnection(js, self._actors)

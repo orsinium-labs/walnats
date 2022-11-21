@@ -62,6 +62,12 @@ class BaseEvent(Generic[T, R]):
             self.serializer = serializer
 
     @property
+    def name(self) -> str:
+        """The name of the event, used as both subject name and stream name in Nats.
+        """
+        return self._name
+
+    @property
     def subject_name(self) -> str:
         """The name of Nats subject used to emit messages.
         """

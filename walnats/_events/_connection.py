@@ -16,6 +16,10 @@ R = TypeVar('R')
 
 @dataclass(frozen=True)
 class ConnectedEvents:
+    """A registry of Event instances. Like Events but connected to Nats server.
+
+    Use it to emit events. Don't instanciate directly, use Events.connect instead.
+    """
     _nc: nats.NATS
     _js: nats.js.JetStreamContext
     _events: tuple[BaseEvent, ...]
