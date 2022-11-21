@@ -11,7 +11,7 @@ import nats.js
 from nats.aio.msg import Msg
 
 from .._context import Context, ErrorContext, OkContext
-from .._event import BaseEvent, EventWithResponse
+from .._events._event import BaseEvent, EventWithResponse
 from .._tasks import Tasks
 from ..middlewares import BaseAsyncMiddleware, BaseSyncMiddleware
 

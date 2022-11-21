@@ -8,7 +8,7 @@ from typing import Generic, TypeVar
 import nats
 import nats.js
 
-from .serializers import Serializer, get_serializer
+from ..serializers import Serializer, get_serializer
 
 
 T = TypeVar('T')
