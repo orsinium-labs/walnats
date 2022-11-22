@@ -1,19 +1,16 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Generic, TypeVar
+from typing import TYPE_CHECKING
 
 
 if TYPE_CHECKING:
     from .._context import Context, ErrorContext, OkContext
 
 
-M = TypeVar('M')
-
-
-class BaseAsyncMiddleware(Generic[M]):
+class BaseAsyncMiddleware:
     __slots__ = ()
 
-    async def on_start(self, ctx: Context[M]) -> None:
+    async def on_start(self, ctx: Context) -> None:
         """Triggered asynchronously right before running the handler.
 
         Since it is asynchronous, it can be executed when handler is already running
@@ -21,23 +18,23 @@ class BaseAsyncMiddleware(Generic[M]):
         """
         pass
 
-    async def on_failure(self, ctx: ErrorContext[M]) -> None:
+    async def on_failure(self, ctx: ErrorContext) -> None:
         pass
 
-    async def on_success(self, ctx: OkContext[M]) -> None:
+    async def on_success(self, ctx: OkContext) -> None:
         pass
 
 
-class BaseSyncMiddleware(Generic[M]):
+class BaseSyncMiddleware:
     __slots__ = ()
 
-    def on_start(self, ctx: Context[M]) -> None:
+    def on_start(self, ctx: Context) -> None:
         """Triggered right before running the handler.
         """
         pass
 
-    def on_failure(self, ctx: ErrorContext[M]) -> None:
+    def on_failure(self, ctx: ErrorContext) -> None:
         pass
 
-    def on_success(self, ctx: OkContext[M]) -> None:
+    def on_success(self, ctx: OkContext) -> None:
         pass

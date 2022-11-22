@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from functools import cached_property
-from typing import TYPE_CHECKING, Generic, TypeVar
+from typing import TYPE_CHECKING
 
 
 if TYPE_CHECKING:
@@ -13,13 +13,10 @@ if TYPE_CHECKING:
     from ._actors import Actor
 
 
-M = TypeVar('M', bound=object)
-
-
 @dataclass(frozen=True)
-class Context(Generic[M]):
+class Context:
     actor: Actor
-    message: M | None
+    message: object | None
     _msg: Msg
 
     @cached_property
@@ -34,10 +31,10 @@ class Context(Generic[M]):
 
 
 @dataclass(frozen=True)
-class ErrorContext(Context[M], Generic[M]):
+class ErrorContext(Context):
     exception: Exception | asyncio.CancelledError
 
 
 @dataclass(frozen=True)
-class OkContext(Context[M], Generic[M]):
+class OkContext(Context):
     duration: float

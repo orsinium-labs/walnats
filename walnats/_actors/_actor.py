@@ -34,8 +34,8 @@ class Actor(Generic[T, R]):
     max_ack_pending: int = 1000
 
     # settings for local job processing
-    async_middlewares: tuple[BaseAsyncMiddleware[T], ...] = ()
-    sync_middlewares: tuple[BaseSyncMiddleware[T], ...] = ()
+    async_middlewares: tuple[BaseAsyncMiddleware, ...] = ()
+    sync_middlewares: tuple[BaseSyncMiddleware, ...] = ()
     max_jobs: int = 16
 
     @property
