@@ -151,7 +151,7 @@ class Actor(Generic[T, R]):
         try:
             async with actor_sem, job_sem:
                 start = perf_counter()
-                event = self.event.serializer.decode(msg.data)
+                event = self.event.decode(msg.data)
 
                 # trigger on_start hooks
                 if has_middlewares:
@@ -179,7 +179,7 @@ class Actor(Generic[T, R]):
             await msg.ack()
 
             if isinstance(self.event, EventWithResponse):
-                payload = self.event.response_serializer.encode(result)
+                payload = self.event.encode_response(result)
                 tasks.start(msg.respond(payload))
 
             # trigger on_success hooks

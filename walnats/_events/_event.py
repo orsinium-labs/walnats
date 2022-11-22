@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import asyncio
 import dataclasses
-from functools import cached_property
 from typing import Generic, TypeVar
 
 import nats
@@ -38,40 +37,21 @@ class Limits:
         return dataclasses.replace(self, **kwargs)
 
 
+@dataclasses.dataclass
 class BaseEvent(Generic[T, R]):
     """Internal-only class to provide shared behavior for Event and EventWithResponse.
-
-    Don't instanciate directly, use Event instead.
     """
-
-    def __init__(
-        self,
-        name: str,
-        schema: type[T],
-        *,
-        serializer: Serializer[T] | None = None,
-        description: str | None = None,
-        limits: Limits = Limits(),
-    ) -> None:
-        assert name
-        self._name = name
-        self._schema = schema
-        self._description = description
-        self._limits = limits
-        if serializer is not None:
-            self.serializer = serializer
-
-    @property
-    def name(self) -> str:
-        """The name of the event, used as both subject name and stream name in Nats.
-        """
-        return self._name
+    name: str
+    schema: type[T]
+    serializer: Serializer[T] | None = None
+    description: str | None = None
+    limits: Limits = Limits()
 
     @property
     def subject_name(self) -> str:
         """The name of Nats subject used to emit messages.
         """
-        return self._name
+        return self.name
 
     @property
     def stream_name(self) -> str:
@@ -79,13 +59,25 @@ class BaseEvent(Generic[T, R]):
 
         Walnats makes exactly one stream per subject.
         """
-        return self._name
+        return self.name
 
-    @cached_property
-    def serializer(self) -> Serializer[T]:
-        """Serializer that is used to turn event payload into bytes.
+    def encode(self, msg: T) -> bytes:
+        """Convert an event payload into bytes.
+
+        Used by Events.emit to transfer events over the network.
         """
-        return get_serializer(self._schema)
+        if self.serializer is None:
+            self.serializer = get_serializer(self.schema)
+        return self.serializer.encode(msg)
+
+    def decode(self, data: bytes) -> T:
+        """Convert raw bytes from event payload into a Python type.
+
+        Used by Actor to extract the event message from Nats message payload.
+        """
+        if self.serializer is None:
+            self.serializer = get_serializer(self.schema)
+        return self.serializer.decode(data)
 
     @property
     def _stream_config(self) -> nats.js.api.StreamConfig:
@@ -96,15 +88,15 @@ class BaseEvent(Generic[T, R]):
         return nats.js.api.StreamConfig(
             name=self.stream_name,
             subjects=[self.subject_name],
-            description=self._description,
+            description=self.description,
             retention=nats.js.api.RetentionPolicy.INTEREST,
 
             # limits
-            max_age=self._limits.age,
-            max_consumers=self._limits.consumers,
-            max_msgs=self._limits.messages,
-            max_bytes=self._limits.bytes,
-            max_msg_size=self._limits.message_size,
+            max_age=self.limits.age,
+            max_consumers=self.limits.consumers,
+            max_msgs=self.limits.messages,
+            max_bytes=self.limits.bytes,
+            max_msg_size=self.limits.message_size,
         )
 
     async def _add(self, js: nats.js.JetStreamContext) -> None:
@@ -119,30 +111,27 @@ class BaseEvent(Generic[T, R]):
         """
         sub = await nc.subscribe('count')
         async for msg in sub.messages:
-            event = self.serializer.decode(msg.data)
+            event = self.decode(msg.data)
             await queue.put(event)
 
     def __repr__(self) -> str:
-        return f'{type(self).__name__}({repr(self._name)}, ...)'
+        return f'{type(self).__name__}({repr(self.name)}, ...)'
 
 
+@dataclasses.dataclass
 class EventWithResponse(BaseEvent[T, R]):
-    def __init__(
-        self,
-        response_schema: type[R],
-        response_serializer: Serializer[R] | None,
-        **kwargs,
-    ) -> None:
-        self._response_schema = response_schema
-        if response_serializer is not None:
-            self.response_serializer = response_serializer
-        super().__init__(**kwargs)
+    response_schema: type[R] = ...  # type: ignore[assignment]
+    response_serializer: Serializer[R] | None = None
 
-    @cached_property
-    def response_serializer(self) -> Serializer[R]:
-        """Serializer used to turn response from actor into bytes and back again.
-        """
-        return get_serializer(self._response_schema)
+    def encode_response(self, msg: R) -> bytes:
+        if self.response_serializer is None:
+            self.response_serializer = get_serializer(self.response_schema)
+        return self.response_serializer.encode(msg)
+
+    def decode_response(self, data: bytes) -> R:
+        if self.response_serializer is None:
+            self.response_serializer = get_serializer(self.response_schema)
+        return self.response_serializer.decode(data)
 
 
 class Event(BaseEvent[T, None]):
@@ -173,9 +162,9 @@ class Event(BaseEvent[T, None]):
         return EventWithResponse(
             response_schema=schema,
             response_serializer=serializer,
-            name=self._name,
-            schema=self._schema,
-            description=self._description,
-            limits=self._limits,
+            name=self.name,
+            schema=self.schema,
+            description=self.description,
+            limits=self.limits,
             serializer=self.serializer,
         )

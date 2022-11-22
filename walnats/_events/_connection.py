@@ -37,13 +37,13 @@ class ConnectedEvents:
     async def emit(self, event: Event[T], message: T) -> None:
         """Send an event into Nats. The event must be registered first.
         """
-        payload = event.serializer.encode(message)
+        payload = event.encode(message)
         await self._nc.publish(event.subject_name, payload)
 
     async def _request(self, event: EventWithResponse[T, R], message: T) -> R:
-        payload = event.serializer.encode(message)
+        payload = event.encode(message)
         msg = await self._nc.request(event.subject_name, payload)
-        resp = event.response_serializer.decode(msg.data)
+        resp = event.decode_response(msg.data)
         return resp
 
     async def monitor(self) -> AsyncIterator[object]:
