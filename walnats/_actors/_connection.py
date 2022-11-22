@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 
 
 @dataclass(frozen=True)
-class SubConnection:
+class ConnectedActors:
     _js: nats.js.JetStreamContext
     _actors: tuple[Actor, ...]
 

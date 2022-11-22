@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, AsyncIterator
 
 import nats
 
-from ._sub_connection import SubConnection
+from ._connection import ConnectedActors
 
 
 if TYPE_CHECKING:
@@ -38,7 +38,7 @@ class Actors:
         self,
         server: list[str] | str | nats.NATS = DEFAULT_SERVER,
         close: bool = True,
-    ) -> AsyncIterator[SubConnection]:
+    ) -> AsyncIterator[ConnectedActors]:
         """Context manager that keeps connection to Nats server.
 
         Args:
@@ -55,7 +55,7 @@ class Actors:
         assert not connection.is_closed
         try:
             js = connection.jetstream()
-            yield SubConnection(js, self._actors)
+            yield ConnectedActors(js, self._actors)
         finally:
             if close:
                 await connection.close()

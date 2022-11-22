@@ -1,6 +1,6 @@
 from ._actor import Actor
 from ._registry import Actors
-from ._sub_connection import SubConnection
+from ._connection import ConnectedActors
 
 
-__all__ = ['Actor', 'Actors', 'SubConnection']
+__all__ = ['Actor', 'Actors', 'ConnectedActors']
