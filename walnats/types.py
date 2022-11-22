@@ -5,11 +5,14 @@ you need any of them for type annotaions in your project.
 """
 from ._actors import ConnectedActors
 from ._events import BaseEvent, ConnectedEvents, EventWithResponse
-
+from ._context import Context, OkContext, ErrorContext
 
 __all__ = [
     'BaseEvent',
     'ConnectedActors',
     'ConnectedEvents',
+    'Context',
+    'ErrorContext',
     'EventWithResponse',
+    'OkContext',
 ]
