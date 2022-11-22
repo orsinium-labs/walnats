@@ -1,8 +1,8 @@
 """Nats-based event-driven background jobs and microservices framework.
 """
-from . import middlewares, serializers
-from ._actors import Actor, Actors, ConnectedActors
-from ._events import ConnectedEvents, Event, Events, Limits
+from . import middlewares, serializers, types
+from ._actors import Actor, Actors
+from ._events import Event, Events, Limits
 from ._helpers import run_actors
 
 
@@ -13,9 +13,8 @@ __all__ = [
     'Event',
     'Events',
     'Limits',
-    'ConnectedEvents',
-    'ConnectedActors',
     'run_actors',
     'serializers',
     'middlewares',
+    'types',
 ]

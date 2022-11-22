@@ -40,6 +40,8 @@ class Actor(Generic[T, R]):
 
     @property
     def consumer_name(self) -> str:
+        """Durable name for Nats JetStream consumer.
+        """
         assert self.name
         return self.name
 
