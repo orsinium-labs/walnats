@@ -28,8 +28,10 @@ class Actor(Generic[T, R]):
     handler: Callable[[T], Awaitable[R]]
 
     # settings for the nats consumer
-    ack_wait: float | None = None
+    description: str | None = None
+    ack_wait: float = 30
     max_attempts: int | None = None
+    max_ack_pending: int = 1000
 
     # settings for local job processing
     async_middlewares: tuple[BaseAsyncMiddleware[T], ...] = ()
@@ -48,8 +50,10 @@ class Actor(Generic[T, R]):
         """
         return nats.js.api.ConsumerConfig(
             durable_name=self.consumer_name,
+            description=self.description,
             ack_wait=self.ack_wait,
             max_deliver=self.max_attempts,
+            max_ack_pending=self.max_ack_pending
         )
 
     async def _add(self, js: nats.js.JetStreamContext) -> None:
