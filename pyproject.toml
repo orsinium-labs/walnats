@@ -55,7 +55,7 @@ addopts = [
     "--cov=walnats",
     "--cov-report=html",
     "--cov-report=term-missing:skip-covered",
-    "--cov-fail-under=82",
+    "--cov-fail-under=86",
 ]
 
 [tool.coverage.report]

@@ -62,8 +62,8 @@ class HMAC(Serializer[M], Generic[M]):
 
     def decode(self, data: bytes) -> M:
         hasher = hmac.HMAC(key=self.key, digestmod=self.hash_algorithm)
-        actual_digest = data[:16]
-        data = data[16:]
+        actual_digest = data[:hasher.digest_size]
+        data = data[hasher.digest_size:]
         hasher.update(data)
         expected_digest = hasher.digest()
         if not hmac.compare_digest(actual_digest, expected_digest):

@@ -3,10 +3,12 @@ from __future__ import annotations
 import asyncio
 import time
 from contextlib import contextmanager
-from .helpers import get_random_name
+
 import pytest
 
 import walnats
+
+from .helpers import get_random_name
 
 
 async def run_burst(
