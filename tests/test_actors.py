@@ -1,9 +1,11 @@
 from __future__ import annotations
+
 import asyncio
-from contextlib import contextmanager
 import time
+from contextlib import contextmanager
 
 import pytest
+
 import walnats
 
 

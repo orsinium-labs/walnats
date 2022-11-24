@@ -45,7 +45,7 @@ async def test_request_response() -> None:
     events = walnats.Events(event)
 
     async def str_to_int(event: str) -> int:
-        assert event == "42"
+        assert event == '42'
         return int(event)
 
     actor = walnats.Actor(get_random_name(), event, str_to_int)
@@ -54,7 +54,7 @@ async def test_request_response() -> None:
         await pub_conn.register()
         await sub_conn.register()
         task = asyncio.create_task(sub_conn.listen(burst=True))
-        resp = await pub_conn._request(event, "42")
+        resp = await pub_conn._request(event, '42')
         await task
     assert resp
     # assert resp == 42

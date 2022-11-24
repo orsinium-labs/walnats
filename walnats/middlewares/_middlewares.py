@@ -1,8 +1,11 @@
 from __future__ import annotations
+
 import logging
-from ._base import BaseSyncMiddleware
-from typing import TYPE_CHECKING
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
+
+from ._base import BaseSyncMiddleware
+
 
 if TYPE_CHECKING:
     from .._context import Context, ErrorContext, OkContext
