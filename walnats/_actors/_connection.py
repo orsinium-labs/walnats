@@ -22,7 +22,10 @@ class ConnectedActors:
         """
         tasks = []
         for actor in self._actors:
-            task = asyncio.create_task(actor._add(self._js))
+            task = asyncio.create_task(
+                actor._add(self._js),
+                name=f'actors/{actor.name}/add',
+            )
             tasks.append(task)
         await asyncio.gather(*tasks)
 
@@ -73,7 +76,7 @@ class ConnectedActors:
                 batch=batch,
                 poll_delay=poll_delay,
             )
-            task = asyncio.create_task(coro)
+            task = asyncio.create_task(coro, name=f'actors/{actor.name}')
             tasks.append(task)
         try:
             await asyncio.gather(*tasks)

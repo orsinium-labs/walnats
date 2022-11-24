@@ -22,14 +22,14 @@ class Tasks:
         self._since_cleanup = 0
         self._done = False
 
-    def start(self, coro: Coroutine[None, None, None]) -> None:
+    def start(self, coro: Coroutine[None, None, None], name: str) -> None:
         """Create a new task and track it in the supervisor.
         """
         assert not self._done
         self._since_cleanup = (self._since_cleanup + 1) % self._cleanup_every
         if self._since_cleanup == 0:
             self._tasks = [t for t in self._tasks if not t.done()]
-        task = asyncio.create_task(coro)
+        task = asyncio.create_task(coro, name=name)
         self._tasks.append(task)
 
     def cancel(self) -> None:

@@ -138,7 +138,7 @@ class Actor(Generic[T, R]):
                 job_sem=job_sem,
                 actor_sem=actor_sem,
                 tasks=tasks,
-            ))
+            ), name=f'actors/{self.name}/handle_message')
 
     async def _handle_message(
         self,
@@ -147,7 +147,13 @@ class Actor(Generic[T, R]):
         actor_sem: asyncio.Semaphore,
         tasks: Tasks,
     ) -> None:
-        pulse_task = asyncio.create_task(self._pulse(msg))
+        prefix = f'actors/{self.name}/'
+        if msg.metadata.sequence:
+            prefix += f'{msg.metadata.sequence.consumer}/'
+        pulse_task = asyncio.create_task(
+            self._pulse(msg),
+            name=f'{prefix}pulse',
+        )
         event = None
         has_middlewares = bool(self.async_middlewares or self.sync_middlewares)
         try:
@@ -161,13 +167,16 @@ class Actor(Generic[T, R]):
                     for smw in self.sync_middlewares:
                         smw.on_start(ctx)
                     for amw in self.async_middlewares:
-                        tasks.start(amw.on_start(ctx))
+                        tasks.start(
+                            amw.on_start(ctx),
+                            name=f'{prefix}on_start',
+                        )
 
                 result = await self.handler(event)
         except (Exception, asyncio.CancelledError) as exc:
             pulse_task.cancel()
             logger.exception(f'Unhandled {type(exc).__name__} in "{self.name}" actor')
-            tasks.start(msg.nak())
+            tasks.start(msg.nak(), name=f'{prefix}nak')
 
             # trigger on_failure hooks
             if has_middlewares:
@@ -175,14 +184,17 @@ class Actor(Generic[T, R]):
                 for smw in self.sync_middlewares:
                     smw.on_failure(ectx)
                 for amw in self.async_middlewares:
-                    tasks.start(amw.on_failure(ectx))
+                    tasks.start(
+                        amw.on_failure(ectx),
+                        name=f'{prefix}on_failure',
+                    )
         else:
             pulse_task.cancel()
             await msg.ack()
 
             if isinstance(self.event, EventWithResponse):
                 payload = self.event.encode_response(result)
-                tasks.start(msg.respond(payload))
+                tasks.start(msg.respond(payload), name=f'{prefix}respond')
 
             # trigger on_success hooks
             if has_middlewares:
@@ -191,12 +203,14 @@ class Actor(Generic[T, R]):
                 for smw in self.sync_middlewares:
                     smw.on_success(octx)
                 for amw in self.async_middlewares:
-                    tasks.start(amw.on_success(octx))
+                    tasks.start(
+                        amw.on_success(octx),
+                        name=f'{prefix}on_success',
+                    )
 
     async def _pulse(self, msg: Msg) -> None:
         """Keep notifying nats server that the message handling is in progress.
         """
-        if self.ack_wait is None:
-            return
         while True:
+            await asyncio.sleep(self.ack_wait / 2)
             await msg.in_progress()

@@ -30,7 +30,10 @@ class ConnectedEvents:
         assert self._events
         tasks = []
         for event in self._events:
-            task = asyncio.create_task(event._add(self._js))
+            task = asyncio.create_task(
+                event._add(self._js),
+                name=f'events/{event.name}/add',
+            )
             tasks.append(task)
         await asyncio.gather(*tasks)
 
@@ -55,7 +58,10 @@ class ConnectedEvents:
         queue: asyncio.Queue[object] = asyncio.Queue()
         tasks: list[asyncio.Task] = []
         for event in self._events:
-            task = asyncio.create_task(event._monitor(self._nc, queue))
+            task = asyncio.create_task(
+                event._monitor(self._nc, queue),
+                name=f'events/{event.name}/monitor',
+            )
             tasks.append(task)
         try:
             while True:

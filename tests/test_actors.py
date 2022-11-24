@@ -33,10 +33,9 @@ async def run_burst(
 @contextmanager
 def faster_than(max_dur: float):
     start = time.perf_counter()
-    try:
-        yield
-    finally:
-        assert time.perf_counter() - start < max_dur
+    yield
+    actual_dur = time.perf_counter() - start
+    assert actual_dur < max_dur
 
 
 @pytest.mark.asyncio
@@ -45,11 +44,11 @@ async def test_many_messages_one_event() -> None:
     messages = [f'msg{i}' for i in range(20)]
 
     async def handler(e: str) -> None:
-        # await asyncio.sleep(.01)
+        await asyncio.sleep(.1)
         received.append(e)
 
     e = walnats.Event('event', str)
-    with faster_than(.02):
+    with faster_than(.3):
         await run_burst(
             walnats.Actor('handler', e, handler),
             messages=[(e, m) for m in messages],
