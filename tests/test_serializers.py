@@ -6,7 +6,7 @@ from dataclasses import dataclass
 import pydantic
 import pytest
 
-from walnats.serializers import Serializer, get_serializer
+from walnats.serializers import get_serializer
 
 
 class Pydantic(pydantic.BaseModel):
@@ -34,7 +34,7 @@ class Dataclass:
 def test_roundtrip(message: object) -> None:
     assert message == message
     schema = type(message)
-    ser: Serializer[object] = get_serializer(schema)
+    ser = get_serializer(schema)
     enc = ser.encode(message)
     dec = ser.decode(enc)
     assert message == dec
