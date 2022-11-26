@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+from typing import Callable
 
 import pytest
 
@@ -10,11 +11,13 @@ from .helpers import get_random_name
 
 
 async def run_actor(
-    actor: walnats.Actor[str, None],
+    handler: Callable,
     message: str,
+    *middlewares: walnats.middlewares.BaseMiddleware,
     **kwargs,
 ) -> None:
-    assert isinstance(actor.event, walnats.Event)
+    event = walnats.Event(get_random_name(), str)
+    actor = walnats.Actor(get_random_name(), event, handler, middlewares=middlewares)
     events_reg = walnats.Events(actor.event)
     actors_reg = walnats.Actors(actor)
     async with events_reg.connect() as pub_conn, actors_reg.connect() as sub_conn:
@@ -22,7 +25,7 @@ async def run_actor(
         await sub_conn.register()
         await asyncio.gather(
             sub_conn.listen(burst=True, **kwargs),
-            pub_conn.emit(actor.event, message),
+            pub_conn.emit(event, message),
         )
 
 
@@ -30,7 +33,7 @@ async def run_actor(
 async def test_custom_sync() -> None:
     triggered = []
 
-    class Middleware(walnats.middlewares.BaseSyncMiddleware):
+    class Middleware(walnats.middlewares.BaseMiddleware):
         def on_failure(self, ctx: walnats.types.ErrorContext) -> None:
             triggered.append('on_failure')
 
@@ -44,9 +47,7 @@ async def test_custom_sync() -> None:
         assert msg == 'hi'
         triggered.append('handler')
 
-    e = walnats.Event(get_random_name(), str)
-    a = walnats.Actor(get_random_name(), e, handler, sync_middlewares=(Middleware(),))
-    await run_actor(a, 'hi')
+    await run_actor(handler, 'hi', Middleware())
     assert triggered == ['on_start', 'handler', 'on_success']
 
 
@@ -54,7 +55,7 @@ async def test_custom_sync() -> None:
 async def test_custom_sync__on_failure() -> None:
     triggered = []
 
-    class Middleware(walnats.middlewares.BaseSyncMiddleware):
+    class Middleware(walnats.middlewares.BaseMiddleware):
         def on_failure(self, ctx: walnats.types.ErrorContext) -> None:
             triggered.append('on_failure')
 
@@ -69,9 +70,7 @@ async def test_custom_sync__on_failure() -> None:
         triggered.append('handler')
         raise ZeroDivisionError
 
-    e = walnats.Event(get_random_name(), str)
-    a = walnats.Actor(get_random_name(), e, handler, sync_middlewares=(Middleware(),))
-    await run_actor(a, 'hi')
+    await run_actor(handler, 'hi', Middleware())
     assert triggered == ['on_start', 'handler', 'on_failure']
 
 
@@ -79,7 +78,7 @@ async def test_custom_sync__on_failure() -> None:
 async def test_custom_async() -> None:
     triggered = []
 
-    class Middleware(walnats.middlewares.BaseAsyncMiddleware):
+    class Middleware(walnats.middlewares.BaseMiddleware):
         async def on_failure(self, ctx: walnats.types.ErrorContext) -> None:
             triggered.append('on_failure')
             raise ctx.exception
@@ -94,9 +93,7 @@ async def test_custom_async() -> None:
         assert msg == 'hi'
         triggered.append('handler')
 
-    e = walnats.Event(get_random_name(), str)
-    a = walnats.Actor(get_random_name(), e, handler, async_middlewares=(Middleware(),))
-    await run_actor(a, 'hi')
+    await run_actor(handler, 'hi', Middleware())
     assert len(triggered) == 3
     assert set(triggered) == {'on_start', 'handler', 'on_success'}
 
@@ -105,7 +102,7 @@ async def test_custom_async() -> None:
 async def test_custom_async__on_failure() -> None:
     triggered = []
 
-    class Middleware(walnats.middlewares.BaseAsyncMiddleware):
+    class Middleware(walnats.middlewares.BaseMiddleware):
         async def on_failure(self, ctx: walnats.types.ErrorContext) -> None:
             triggered.append('on_failure')
 
@@ -120,8 +117,6 @@ async def test_custom_async__on_failure() -> None:
         triggered.append('handler')
         raise ZeroDivisionError
 
-    e = walnats.Event(get_random_name(), str)
-    a = walnats.Actor(get_random_name(), e, handler, async_middlewares=(Middleware(),))
-    await run_actor(a, 'hi')
+    await run_actor(handler, 'hi', Middleware())
     assert len(triggered) == 3
     assert set(triggered) == {'on_start', 'handler', 'on_failure'}

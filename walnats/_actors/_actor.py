@@ -13,7 +13,7 @@ from nats.aio.msg import Msg
 from .._context import Context, ErrorContext, OkContext
 from .._events._event import BaseEvent, EventWithResponse
 from .._tasks import Tasks
-from ..middlewares import BaseAsyncMiddleware, BaseSyncMiddleware
+from ..middlewares import BaseMiddleware
 
 
 T = TypeVar('T')
@@ -34,8 +34,7 @@ class Actor(Generic[T, R]):
     max_ack_pending: int = 1000
 
     # settings for local job processing
-    async_middlewares: tuple[BaseAsyncMiddleware, ...] = ()
-    sync_middlewares: tuple[BaseSyncMiddleware, ...] = ()
+    middlewares: tuple[BaseMiddleware, ...] = ()
     max_jobs: int = 16
 
     @property
@@ -155,7 +154,7 @@ class Actor(Generic[T, R]):
             name=f'{prefix}pulse',
         )
         event = None
-        has_middlewares = bool(self.async_middlewares or self.sync_middlewares)
+        has_middlewares = bool(self.middlewares or self.middlewares)
         try:
             async with actor_sem, job_sem:
                 start = perf_counter()
@@ -164,13 +163,10 @@ class Actor(Generic[T, R]):
                 # trigger on_start hooks
                 if has_middlewares:
                     ctx = Context(actor=self, message=event, _msg=msg)
-                    for smw in self.sync_middlewares:
-                        smw.on_start(ctx)
-                    for amw in self.async_middlewares:
-                        tasks.start(
-                            amw.on_start(ctx),
-                            name=f'{prefix}on_start',
-                        )
+                    for mw in self.middlewares:
+                        coro = mw.on_start(ctx)
+                        if coro is not None:
+                            tasks.start(coro, name=f'{prefix}on_start')
 
                 result = await self.handler(event)
         except (Exception, asyncio.CancelledError) as exc:
@@ -181,13 +177,10 @@ class Actor(Generic[T, R]):
             # trigger on_failure hooks
             if has_middlewares:
                 ectx = ErrorContext(actor=self, message=event, exception=exc, _msg=msg)
-                for smw in self.sync_middlewares:
-                    smw.on_failure(ectx)
-                for amw in self.async_middlewares:
-                    tasks.start(
-                        amw.on_failure(ectx),
-                        name=f'{prefix}on_failure',
-                    )
+                for mw in self.middlewares:
+                    coro = mw.on_failure(ectx)
+                    if coro is not None:
+                        tasks.start(coro, name=f'{prefix}on_failure')
         else:
             pulse_task.cancel()
             await msg.ack()
@@ -200,13 +193,10 @@ class Actor(Generic[T, R]):
             if has_middlewares:
                 duration = perf_counter() - start
                 octx = OkContext(actor=self, message=event, _msg=msg, duration=duration)
-                for smw in self.sync_middlewares:
-                    smw.on_success(octx)
-                for amw in self.async_middlewares:
-                    tasks.start(
-                        amw.on_success(octx),
-                        name=f'{prefix}on_success',
-                    )
+                for mw in self.middlewares:
+                    coro = mw.on_success(octx)
+                    if coro is not None:
+                        tasks.start(coro, name=f'{prefix}on_success')
 
     async def _pulse(self, msg: Msg) -> None:
         """Keep notifying nats server that the message handling is in progress.

@@ -4,7 +4,7 @@ import logging
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-from ._base import BaseSyncMiddleware
+from ._base import BaseMiddleware
 
 
 if TYPE_CHECKING:
@@ -12,7 +12,7 @@ if TYPE_CHECKING:
 
 
 @dataclass(frozen=True)
-class ExtraLog(BaseSyncMiddleware):
+class ExtraLog(BaseMiddleware):
     """Hooks to write logs with ``extra`` fields using ``logging``.
 
     The ``extra`` fields aren't shown by default, you need to specifically

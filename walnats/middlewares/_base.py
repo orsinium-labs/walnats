@@ -1,40 +1,25 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Coroutine
 
 
 if TYPE_CHECKING:
     from .._context import Context, ErrorContext, OkContext
 
 
-class BaseAsyncMiddleware:
+class BaseMiddleware:
     __slots__ = ()
 
-    async def on_start(self, ctx: Context) -> None:
+    def on_start(self, ctx: Context) -> Coroutine[None, None, None] | None:
         """Triggered asynchronously right before running the handler.
 
-        Since it is asynchronous, it can be executed when handler is already running
+        If asynchronous, it can be executed when handler is already running
         or even finished.
         """
         pass
 
-    async def on_failure(self, ctx: ErrorContext) -> None:
+    def on_failure(self, ctx: ErrorContext) -> Coroutine[None, None, None] | None:
         pass
 
-    async def on_success(self, ctx: OkContext) -> None:
-        pass
-
-
-class BaseSyncMiddleware:
-    __slots__ = ()
-
-    def on_start(self, ctx: Context) -> None:
-        """Triggered right before running the handler.
-        """
-        pass
-
-    def on_failure(self, ctx: ErrorContext) -> None:
-        pass
-
-    def on_success(self, ctx: OkContext) -> None:
+    def on_success(self, ctx: OkContext) -> Coroutine[None, None, None] | None:
         pass
