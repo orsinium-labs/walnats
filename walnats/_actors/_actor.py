@@ -25,6 +25,42 @@ logger = getLogger(__package__)
 @dataclass(frozen=True)
 class Actor(Generic[T, R]):
     """A subscriber group that listens to a specific event.
+
+    Args:
+        name: the actor name. It is used as durable consumer name in Nats,
+            and so must be unique and never change. If you ever change the name,
+            a consumer with the old name will be left in Nats JetStream and will
+            accumulate events (until a limit is reached, and you should have Limits).
+        event: the event to listen to. Exactly one instance of the same Actor
+            will receive a message. That means, you can run the same actor multiple times
+            on different machines, and only one will receive a message. And not a single
+            message will be lost.
+        handler: the function to call when a message is received.
+        description: the actor description, will be attached to the consumer name in Nats.
+            Can be useful if you use observability tools for Nats.
+        ack_wait: how many seconds to wait from the last update before trying to
+            redeliver the message. Before calling the handler, a task will be started
+            that periodically sends a pulse into Nats saying that the job is in progress.
+            The pulse, hovewer, might not arrive in Nats if the network or machine dies
+            or something has blocked the scheduler for too long.
+        max_attempts: how many attempts Nats will make to deliver the message.
+            The message is redelivered if the handler fails to handle it.
+        max_ack_pending: how many messages can be in progress simultaneously
+            accross the whole system. If the limit is reached, delivery of messages
+            is suspended.
+        middlewares: callbacks that are triggered at different stages of message handling.
+            Most of the time, you'll need regular decorators instead. Middlewares are
+            useful when you need an additional context, like how many times the message
+            was redelivered. In particular, for logs, metrics, alerts.
+        max_jobs: how many jobs can be running simultaneously in this actor
+            on this machine. The best number depends on available resources and
+            the handler performance. Keep it low for slow handlers, keep it high for
+            highly concurrent handlers.
+        execute_in: set it to run the handler in a thread or in a process.
+            Use threads for slow IO-bound non-async/await handlers.
+            Use processes for slow CPU-bound handlers.
+            For running in a process, the handler and the message must be pickle-able.
+            If ``execute_in`` is set, the handler must be non-async/await.
     """
     name: str
     event: BaseEvent[T, R]
@@ -58,7 +94,7 @@ class Actor(Generic[T, R]):
             description=self.description,
             ack_wait=self.ack_wait,
             max_deliver=self.max_attempts,
-            max_ack_pending=self.max_ack_pending
+            max_ack_pending=self.max_ack_pending,
         )
 
     async def _add(self, js: nats.js.JetStreamContext) -> None:
