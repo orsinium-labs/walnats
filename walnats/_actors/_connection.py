@@ -1,15 +1,16 @@
 from __future__ import annotations
 
 import asyncio
+from concurrent.futures import (
+    Executor, ProcessPoolExecutor, ThreadPoolExecutor,
+)
+from contextlib import ExitStack
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
 
 import nats
 import nats.js
 
-
-if TYPE_CHECKING:
-    from ._actor import Actor
+from ._actor import Actor
 
 
 @dataclass(frozen=True)
@@ -36,6 +37,8 @@ class ConnectedActors:
         poll_delay: float = 2,
         batch: int = 1,
         max_jobs: int = 16,
+        max_processes: int | None = None,
+        max_threads: int | None = None,
     ) -> None:
         """Listen Nats for events for all registered actors.
 
@@ -58,6 +61,10 @@ class ConnectedActors:
             max_jobs: how many jobs (handlers) can be running at the same time.
                 Higher values put more strain on CPU but give better performance
                 if the handlers are IO-bound and use a lot of async/await.
+            max_processes: if an Actor is configured to run in a process,
+                this is how many processes at most can be running at the same time.
+            max_threads: if an Actor is configured to run in a thread,
+                this is how many threads at most can be running at the same time.
         """
         assert max_polls is None or max_polls >= 1
         assert poll_delay >= 0
@@ -66,20 +73,35 @@ class ConnectedActors:
 
         poll_sem = asyncio.Semaphore(max_polls or len(self._actors))
         job_sem = asyncio.Semaphore(max_jobs)
-        tasks: list[asyncio.Task] = []
-        for actor in self._actors:
-            coro = actor._listen(
-                js=self._js,
-                burst=burst,
-                poll_sem=poll_sem,
-                job_sem=job_sem,
-                batch=batch,
-                poll_delay=poll_delay,
-            )
-            task = asyncio.create_task(coro, name=f'actors/{actor.name}')
-            tasks.append(task)
-        try:
-            await asyncio.gather(*tasks)
-        finally:
-            for task in tasks:
-                task.cancel()
+        thread_pool: ThreadPoolExecutor | None = None
+        proc_pool: ProcessPoolExecutor | None = None
+        with ExitStack() as stack:
+            if any(a.execute_in == 'thread' for a in self._actors):
+                thread_pool = stack.enter_context(ThreadPoolExecutor(max_threads))
+            if any(a.execute_in == 'process' for a in self._actors):
+                proc_pool = stack.enter_context(ProcessPoolExecutor(max_processes))
+            tasks: list[asyncio.Task] = []
+            executor: Executor | None
+            for actor in self._actors:
+                if actor.execute_in == 'thread':
+                    executor = thread_pool
+                elif actor.execute_in == 'process':
+                    executor = proc_pool
+                else:
+                    executor = None
+                coro = actor._listen(
+                    js=self._js,
+                    burst=burst,
+                    poll_sem=poll_sem,
+                    job_sem=job_sem,
+                    batch=batch,
+                    poll_delay=poll_delay,
+                    executor=executor,
+                )
+                task = asyncio.create_task(coro, name=f'actors/{actor.name}')
+                tasks.append(task)
+            try:
+                await asyncio.gather(*tasks)
+            finally:
+                for task in tasks:
+                    task.cancel()

@@ -81,6 +81,36 @@ async def test_respect_timeout() -> None:
         )
 
 
+def slow_handler(e: str) -> None:
+    time.sleep(.1)
+
+
+@pytest.mark.asyncio
+async def test_run_in_process_pool() -> None:
+    messages = [f'msg{i}' for i in range(20)]
+
+    e = walnats.Event(get_random_name(), str)
+    with duration_between(.1, .4):
+        await run_burst(
+            walnats.Actor(get_random_name(), e, slow_handler, execute_in='process'),
+            messages=[(e, m) for m in messages],
+            batch=len(messages),
+        )
+
+
+@pytest.mark.asyncio
+async def test_run_in_thread_pool() -> None:
+    messages = [f'msg{i}' for i in range(20)]
+
+    e = walnats.Event(get_random_name(), str)
+    with duration_between(.1, .4):
+        await run_burst(
+            walnats.Actor(get_random_name(), e, slow_handler, execute_in='thread'),
+            messages=[(e, m) for m in messages],
+            batch=len(messages),
+        )
+
+
 def test_actors_get():
     async def noop(_):
         pass

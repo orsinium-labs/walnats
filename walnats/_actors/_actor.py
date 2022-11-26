@@ -2,10 +2,11 @@
 from __future__ import annotations
 
 import asyncio
+from concurrent.futures import Executor
 from dataclasses import dataclass
 from logging import getLogger
 from time import perf_counter
-from typing import Awaitable, Callable, Generic, TypeVar
+from typing import Awaitable, Callable, Generic, Literal, TypeVar
 
 import nats.js
 from nats.aio.msg import Msg
@@ -23,9 +24,11 @@ logger = getLogger(__package__)
 
 @dataclass(frozen=True)
 class Actor(Generic[T, R]):
+    """A subscriber group that listens to a specific event.
+    """
     name: str
     event: BaseEvent[T, R]
-    handler: Callable[[T], Awaitable[R]]
+    handler: Callable[[T], Awaitable[R] | R]
 
     # settings for the nats consumer
     description: str | None = None
@@ -36,6 +39,7 @@ class Actor(Generic[T, R]):
     # settings for local job processing
     middlewares: tuple[BaseMiddleware, ...] = ()
     max_jobs: int = 16
+    execute_in: Literal['thread', 'process'] | None = None
 
     @property
     def consumer_name(self) -> str:
@@ -76,6 +80,7 @@ class Actor(Generic[T, R]):
         poll_delay: float,
         burst: bool,
         batch: int,
+        executor: Executor | None,
     ) -> None:
         """Subscribe to the stream, pull relevant messages, and run the handler for each.
 
@@ -97,6 +102,7 @@ class Actor(Generic[T, R]):
                     batch=batch,
                     psub=psub,
                     tasks=tasks,
+                    executor=executor,
                 )
                 if burst:
                     await tasks.wait()
@@ -114,6 +120,7 @@ class Actor(Generic[T, R]):
         batch: int,
         psub: nats.js.JetStreamContext.PullSubscription,
         tasks: Tasks,
+        executor: Executor | None,
     ) -> None:
         # don't try polling new messages if there are no jobs to handle them
         if actor_sem.locked():
@@ -137,6 +144,7 @@ class Actor(Generic[T, R]):
                 job_sem=job_sem,
                 actor_sem=actor_sem,
                 tasks=tasks,
+                executor=executor,
             ), name=f'actors/{self.name}/handle_message')
 
     async def _handle_message(
@@ -145,6 +153,7 @@ class Actor(Generic[T, R]):
         job_sem: asyncio.Semaphore,
         actor_sem: asyncio.Semaphore,
         tasks: Tasks,
+        executor: Executor | None,
     ) -> None:
         prefix = f'actors/{self.name}/'
         if msg.metadata.sequence:
@@ -168,7 +177,13 @@ class Actor(Generic[T, R]):
                         if coro is not None:
                             tasks.start(coro, name=f'{prefix}on_start')
 
-                result = await self.handler(event)
+                if executor is not None:
+                    loop = asyncio.get_running_loop()
+                    result = await loop.run_in_executor(executor, self.handler, event)
+                else:
+                    result = self.handler(event)
+                    if asyncio.iscoroutine(result):
+                        result = await result
         except (Exception, asyncio.CancelledError) as exc:
             pulse_task.cancel()
             logger.exception(f'Unhandled {type(exc).__name__} in "{self.name}" actor')
