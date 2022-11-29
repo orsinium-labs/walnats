@@ -18,17 +18,19 @@ R = TypeVar('R')
 class Limits:
     """Stream configuration options limiting the Stream size.
 
+    Args:
+        age: Maximum age of any message in the Stream in seconds.
+        consumers: How many Consumers can be defined for a given Stream.
+        messages: How many messages may be in a Stream.
+        bytes: How many bytes the Stream may contain.
+        message_size: The largest message that will be accepted by the Stream.
+
     https://docs.nats.io/nats-concepts/jetstream/streams#configuration
     """
-    #: Maximum age of any message in the Stream in seconds.
     age: float | None = None
-    #: How many Consumers can be defined for a given Stream.
     consumers: int | None = None
-    #: How many messages may be in a Stream.
     messages: int | None = None
-    #: How many bytes the Stream may contain.
     bytes: int | None = None
-    #: The largest message that will be accepted by the Stream.
     message_size: int | None = None
 
     def evolve(self, **kwargs: float | None) -> Limits:

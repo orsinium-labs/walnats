@@ -126,6 +126,7 @@ class Actor(Generic[T, R]):
         psub = await js.pull_subscribe_bind(
             durable=self.consumer_name,
             stream=self.event.stream_name,
+            # pending_msgs_limit=batch,
         )
         actor_sem = asyncio.Semaphore(self.max_jobs)
         try:
