@@ -111,13 +111,11 @@ class BaseEvent(Generic[T, R]):
     async def _monitor(self, nc: nats.NATS, queue: asyncio.Queue[T]) -> None:
         """Subscribe to the subject and emit all events into the given queue.
         """
-        sub = await nc.subscribe('count')
+        sub = await nc.subscribe(self.subject_name)
+        print(sub)
         async for msg in sub.messages:
             event = self.decode(msg.data)
             await queue.put(event)
-
-    def __repr__(self) -> str:
-        return f'{type(self).__name__}({repr(self.name)}, ...)'
 
 
 @dataclasses.dataclass

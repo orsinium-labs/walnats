@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import asyncio
+from contextlib import contextmanager
 from dataclasses import dataclass
-from typing import AsyncIterator, TypeVar
+from typing import Iterator, TypeVar
 
 import nats
 import nats.js
@@ -49,8 +50,9 @@ class ConnectedEvents:
         resp = event.decode_response(msg.data)
         return resp
 
-    async def monitor(self) -> AsyncIterator[object]:
-        """Listen to all registered events and emit them.
+    @contextmanager
+    def monitor(self) -> Iterator[asyncio.Queue[object]]:
+        """Listen to all registered events and iterate over them.
 
         Events emitted while you don't listen won't be remembered.
         In other words, it's a live feed. Useful for debugging.
@@ -64,8 +66,7 @@ class ConnectedEvents:
             )
             tasks.append(task)
         try:
-            while True:
-                yield await queue.get()
+            yield queue
         finally:
             for task in tasks:
                 task.cancel()
