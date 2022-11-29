@@ -200,14 +200,13 @@ class Actor(Generic[T, R]):
             name=f'{prefix}pulse',
         )
         event = None
-        has_middlewares = bool(self.middlewares or self.middlewares)
         try:
             async with actor_sem, job_sem:
                 start = perf_counter()
                 event = self.event.decode(msg.data)
 
                 # trigger on_start hooks
-                if has_middlewares:
+                if self.middlewares:
                     ctx = Context(actor=self, message=event, _msg=msg)
                     for mw in self.middlewares:
                         coro = mw.on_start(ctx)
@@ -227,7 +226,7 @@ class Actor(Generic[T, R]):
             tasks.start(msg.nak(), name=f'{prefix}nak')
 
             # trigger on_failure hooks
-            if has_middlewares:
+            if self.middlewares:
                 ectx = ErrorContext(actor=self, message=event, exception=exc, _msg=msg)
                 for mw in self.middlewares:
                     coro = mw.on_failure(ectx)
@@ -242,7 +241,7 @@ class Actor(Generic[T, R]):
                 tasks.start(msg.respond(payload), name=f'{prefix}respond')
 
             # trigger on_success hooks
-            if has_middlewares:
+            if self.middlewares:
                 duration = perf_counter() - start
                 octx = OkContext(actor=self, message=event, _msg=msg, duration=duration)
                 for mw in self.middlewares:

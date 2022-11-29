@@ -1,13 +1,17 @@
 from __future__ import annotations
 
 import asyncio
-from typing import Callable
+import logging
+from typing import TYPE_CHECKING, Callable
 
 import pytest
 
 import walnats
 
 from .helpers import get_random_name
+
+if TYPE_CHECKING:
+    from _pytest.logging import LogCaptureFixture
 
 
 async def run_actor(
@@ -120,3 +124,38 @@ async def test_custom_async__on_failure() -> None:
     await run_actor(handler, 'hi', Middleware())
     assert len(triggered) == 3
     assert set(triggered) == {'on_start', 'handler', 'on_failure'}
+
+
+@pytest.mark.asyncio
+async def test_extra_log_middleware(caplog: LogCaptureFixture) -> None:
+    caplog.set_level(logging.DEBUG)
+
+    async def handler(msg: str) -> None:
+        pass
+
+    await run_actor(handler, 'hi', walnats.middlewares.ExtraLog())
+    records = []
+    for record in caplog.records:
+        if record.name.startswith('walnats'):
+            records.append(record)
+    assert len(records) == 2
+    assert records[0].message == 'event received'
+    assert records[1].message == 'event processed'
+
+
+@pytest.mark.asyncio
+async def test_extra_log_middleware__on_failure(caplog: LogCaptureFixture) -> None:
+    caplog.set_level(logging.DEBUG)
+
+    async def handler(msg: str) -> None:
+        1/0
+
+    await run_actor(handler, 'hi', walnats.middlewares.ExtraLog())
+    records = []
+    for record in caplog.records:
+        if record.name.startswith('walnats'):
+            records.append(record)
+    assert len(records) == 3
+    assert records[0].message == 'event received'
+    assert records[1].message.startswith('Unhandled ZeroDivisionError in')
+    assert records[2].message == 'actor failed'
