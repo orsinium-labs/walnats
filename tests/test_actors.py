@@ -34,10 +34,8 @@ async def run_burst(
     async with events_reg.connect() as pub_conn, actors_reg.connect() as sub_conn:
         await pub_conn.register()
         await sub_conn.register()
-        await asyncio.gather(
-            sub_conn.listen(burst=True, **kwargs),
-            *[pub_conn.emit(e, m) for e, m in messages],
-        )
+        await asyncio.gather(*[pub_conn.emit(e, m) for e, m in messages])
+        await sub_conn.listen(burst=True, **kwargs)
 
 
 @contextmanager
@@ -64,7 +62,8 @@ async def test_many_messages_one_event() -> None:
             messages=[(e, m) for m in messages],
             batch=len(messages),
         )
-    assert set(received) == set(messages)
+        assert len(received) == len(messages)
+        assert set(received) == set(messages)
 
 
 @pytest.mark.asyncio
