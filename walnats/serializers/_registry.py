@@ -24,4 +24,4 @@ def get_serializer(schema: type[T]) -> Serializer[T]:
         serializer = serializer_class.new(schema)
         if serializer is not None:
             return serializer
-    raise RuntimeError(f'cannot find serializer for {schema.__name__}')
+    raise LookupError(f'cannot find serializer for {schema.__name__}')

@@ -59,6 +59,25 @@ def test_gzip_roundtrip(message: object) -> None:
     assert message == dec
 
 
+@pytest.mark.parametrize('message', [
+    'hello',
+    b'hello',
+    123,
+    123.45,
+    True,
+    ['hello', 'world'],
+    {'hello': 'world'},
+])
+def test_message_pack_roundtrip(message: object) -> None:
+    assert message == message
+    schema = type(message)
+    ser = walnats.serializers.MessagePackSerializer(schema=schema)
+    enc = ser.encode(message)
+    assert isinstance(enc, bytes)
+    dec = ser.decode(enc)
+    assert message == dec
+
+
 @pytest.mark.parametrize('message', TEST_CASES)
 def test_hmac_roundtrip(message: object) -> None:
     assert message == message
@@ -104,3 +123,8 @@ def test_fernet_roundtrip(message: object) -> None:
 
     with pytest.raises(InvalidToken):
         fernet_ser.decode(b'a' + enc)
+
+
+def test_no_serializer():
+    with pytest.raises(LookupError):
+        walnats.serializers.get_serializer(object)
