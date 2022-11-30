@@ -13,6 +13,7 @@ from ._event import BaseEvent, Event, EventWithResponse
 
 T = TypeVar('T')
 R = TypeVar('R')
+MSG_ID = nats.js.api.Header.MSG_ID.value
 
 
 @dataclass(frozen=True)
@@ -38,11 +39,20 @@ class ConnectedEvents:
             tasks.append(task)
         await asyncio.gather(*tasks)
 
-    async def emit(self, event: Event[T], message: T) -> None:
+    async def emit(self, event: Event[T], message: T, uid: str | None = None) -> None:
         """Send an event into Nats. The event must be registered first.
+
+        Args:
+            event: registered event to which the message belongs.
+            message: the message payload to send.
+            uid: unique ID of the message. If provided, will be used to ensure
+                that the same message is not delivered twice.
+                Duplicate messagess with the same ID will be ignored.
+                Deduplication window in Nats JetStream is 2 minutes by default.
         """
         payload = event.encode(message)
-        await self._nc.publish(event.subject_name, payload)
+        headers = {MSG_ID: uid} if uid is not None else None
+        await self._nc.publish(event.subject_name, payload, headers=headers)
 
     async def _request(self, event: EventWithResponse[T, R], message: T) -> R:
         payload = event.encode(message)
