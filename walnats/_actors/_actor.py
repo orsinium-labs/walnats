@@ -14,7 +14,7 @@ from nats.aio.msg import Msg
 from .._context import Context, ErrorContext, OkContext
 from .._events._event import BaseEvent, EventWithResponse
 from .._tasks import Tasks
-from ..middlewares import BaseMiddleware
+from ..middlewares import Middleware
 
 
 T = TypeVar('T')
@@ -73,7 +73,7 @@ class Actor(Generic[T, R]):
     max_ack_pending: int = 1000
 
     # settings for local job processing
-    middlewares: tuple[BaseMiddleware, ...] = ()
+    middlewares: tuple[Middleware, ...] = ()
     max_jobs: int = 16
     execute_in: Literal['thread', 'process'] | None = None
 

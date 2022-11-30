@@ -17,7 +17,7 @@ M = TypeVar('M')
 
 
 @dataclass(frozen=True)
-class GZip(Serializer[M], Generic[M]):
+class GZipSerializer(Serializer[M], Generic[M]):
     serializer: Serializer[M]
     level: int = 9
 
@@ -31,7 +31,7 @@ class GZip(Serializer[M], Generic[M]):
 
 
 @dataclass(frozen=True)
-class Fernet(Serializer[M], Generic[M]):
+class FernetSerializer(Serializer[M], Generic[M]):
     serializer: Serializer[M]
     key: str | bytes
 
@@ -50,7 +50,7 @@ class Fernet(Serializer[M], Generic[M]):
 
 
 @dataclass(frozen=True)
-class HMAC(Serializer[M], Generic[M]):
+class HMACSerializer(Serializer[M], Generic[M]):
     serializer: Serializer[M]
     key: bytes
     hash_algorithm: str = 'sha512'

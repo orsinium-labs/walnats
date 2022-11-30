@@ -7,7 +7,7 @@ if TYPE_CHECKING:
     from .._context import Context, ErrorContext, OkContext
 
 
-class BaseMiddleware:
+class Middleware:
     """Middlewares are callbacks that are triggered whe handling a message.
 
     In many cases, like when you want to suppress specific errors from the handler,

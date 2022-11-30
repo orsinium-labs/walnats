@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 async def run_actor(
     handler: Callable,
     message: str,
-    *middlewares: walnats.middlewares.BaseMiddleware,
+    *middlewares: walnats.middlewares.Middleware,
     **kwargs,
 ) -> None:
     event = walnats.Event(get_random_name(), str)
@@ -37,7 +37,7 @@ async def run_actor(
 async def test_custom_sync() -> None:
     triggered = []
 
-    class Middleware(walnats.middlewares.BaseMiddleware):
+    class Middleware(walnats.middlewares.Middleware):
         def on_failure(self, ctx: walnats.types.ErrorContext) -> None:
             triggered.append('on_failure')
 
@@ -59,7 +59,7 @@ async def test_custom_sync() -> None:
 async def test_custom_sync__on_failure() -> None:
     triggered = []
 
-    class Middleware(walnats.middlewares.BaseMiddleware):
+    class Middleware(walnats.middlewares.Middleware):
         def on_failure(self, ctx: walnats.types.ErrorContext) -> None:
             triggered.append('on_failure')
 
@@ -82,7 +82,7 @@ async def test_custom_sync__on_failure() -> None:
 async def test_custom_async() -> None:
     triggered = []
 
-    class Middleware(walnats.middlewares.BaseMiddleware):
+    class Middleware(walnats.middlewares.Middleware):
         async def on_failure(self, ctx: walnats.types.ErrorContext) -> None:
             triggered.append('on_failure')
             raise ctx.exception
@@ -106,7 +106,7 @@ async def test_custom_async() -> None:
 async def test_custom_async__on_failure() -> None:
     triggered = []
 
-    class Middleware(walnats.middlewares.BaseMiddleware):
+    class Middleware(walnats.middlewares.Middleware):
         async def on_failure(self, ctx: walnats.types.ErrorContext) -> None:
             triggered.append('on_failure')
 
@@ -133,7 +133,7 @@ async def test_extra_log_middleware(caplog: LogCaptureFixture) -> None:
     async def handler(msg: str) -> None:
         pass
 
-    await run_actor(handler, 'hi', walnats.middlewares.ExtraLog())
+    await run_actor(handler, 'hi', walnats.middlewares.ExtraLogMiddleware())
     records = []
     for record in caplog.records:
         if record.name.startswith('walnats'):
@@ -150,7 +150,7 @@ async def test_extra_log_middleware__on_failure(caplog: LogCaptureFixture) -> No
     async def handler(msg: str) -> None:
         1/0
 
-    await run_actor(handler, 'hi', walnats.middlewares.ExtraLog())
+    await run_actor(handler, 'hi', walnats.middlewares.ExtraLogMiddleware())
     records = []
     for record in caplog.records:
         if record.name.startswith('walnats'):

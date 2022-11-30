@@ -6,7 +6,7 @@ from ._serializers import (
     MarshmallowSerializer, PrimitiveSerializer, ProtobufSerializer,
     PydanticSerializer,
 )
-from ._wrappers import HMAC, Fernet, GZip
+from ._wrappers import HMACSerializer, FernetSerializer, GZipSerializer
 
 
 __all__ = [
@@ -24,7 +24,7 @@ __all__ = [
     'PydanticSerializer',
 
     # wrappers
-    'Fernet',
-    'GZip',
-    'HMAC',
+    'FernetSerializer',
+    'GZipSerializer',
+    'HMACSerializer',
 ]

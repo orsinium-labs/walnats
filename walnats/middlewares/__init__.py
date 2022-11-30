@@ -1,9 +1,9 @@
-from ._base import BaseMiddleware
-from ._middlewares import ExtraLog
+from ._base import Middleware
+from ._middlewares import ExtraLogMiddleware
 
 
 __all__ = [
-    'BaseMiddleware',
-    'BaseMiddleware',
-    'ExtraLog',
+    'Middleware',
+    'Middleware',
+    'ExtraLogMiddleware',
 ]

@@ -35,6 +35,7 @@ async def run_burst(
         await pub_conn.register()
         await sub_conn.register()
         await asyncio.gather(*[pub_conn.emit(e, m) for e, m in messages])
+        await asyncio.sleep(.01)
         await sub_conn.listen(burst=True, **kwargs)
 
 

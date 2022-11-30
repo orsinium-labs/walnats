@@ -49,7 +49,7 @@ def test_gzip_roundtrip(message: object) -> None:
     assert message == message
     schema = type(message)
     orig_ser = walnats.serializers.get_serializer(schema)
-    gzip_ser = walnats.serializers.GZip(schema=schema, serializer=orig_ser)
+    gzip_ser = walnats.serializers.GZipSerializer(schema=schema, serializer=orig_ser)
 
     orig_enc = orig_ser.encode(message)
     enc = gzip_ser.encode(message)
@@ -83,7 +83,7 @@ def test_hmac_roundtrip(message: object) -> None:
     assert message == message
     schema = type(message)
     orig_ser = walnats.serializers.get_serializer(schema)
-    hmac_ser = walnats.serializers.HMAC(
+    hmac_ser = walnats.serializers.HMACSerializer(
         schema=schema,
         serializer=orig_ser,
         key=b'secret',
@@ -108,7 +108,7 @@ def test_fernet_roundtrip(message: object) -> None:
     schema = type(message)
     orig_ser = walnats.serializers.get_serializer(schema)
     key = Fernet.generate_key()
-    fernet_ser = walnats.serializers.Fernet(
+    fernet_ser = walnats.serializers.FernetSerializer(
         schema=schema,
         serializer=orig_ser,
         key=key,
