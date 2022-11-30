@@ -54,7 +54,7 @@ async def test_request_response() -> None:
         await pub_conn.register()
         await sub_conn.register()
         task = asyncio.create_task(sub_conn.listen(burst=True))
-        resp = await pub_conn._request(event, '42')
+        resp = await pub_conn.request(event, '42')
         await task
     assert resp
-    # assert resp == 42
+    assert resp == 42

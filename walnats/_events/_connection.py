@@ -54,9 +54,26 @@ class ConnectedEvents:
         headers = {MSG_ID: uid} if uid is not None else None
         await self._nc.publish(event.subject_name, payload, headers=headers)
 
-    async def _request(self, event: EventWithResponse[T, R], message: T) -> R:
+    async def request(
+        self,
+        event: EventWithResponse[T, R],
+        message: T,
+        timeout: float = 3,
+    ) -> R:
         payload = event.encode(message)
-        msg = await self._nc.request(event.subject_name, payload)
+        inbox = self._nc.new_inbox()
+        sub = await self._nc.subscribe(inbox)
+        try:
+            await self._nc.publish(
+                event.subject_name,
+                payload,
+                # We can't use Nats built-in request/reply mechanism
+                # because JetStream discards the Reply header for messages.
+                headers={'Walnats-Reply': inbox},
+            )
+            msg = await sub.next_msg(timeout=timeout)
+        finally:
+            await sub.unsubscribe()
         resp = event.decode_response(msg.data)
         return resp
 

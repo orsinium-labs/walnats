@@ -238,7 +238,10 @@ class Actor(Generic[T, R]):
 
             if isinstance(self.event, EventWithResponse):
                 payload = self.event.encode_response(result)
-                tasks.start(msg.respond(payload), name=f'{prefix}respond')
+                reply = msg.headers.get('Walnats-Reply') if msg.headers else None
+                if reply is not None:
+                    coro = msg._client.publish(reply, payload, headers=msg.headers)
+                    tasks.start(coro, name=f'{prefix}respond')
 
             # trigger on_success hooks
             if self.middlewares:
