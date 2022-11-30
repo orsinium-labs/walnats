@@ -10,6 +10,7 @@ import walnats
 
 from .helpers import get_random_name
 
+
 if TYPE_CHECKING:
     from _pytest.logging import LogCaptureFixture
 

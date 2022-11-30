@@ -6,7 +6,7 @@ from ._serializers import (
     MarshmallowSerializer, PrimitiveSerializer, ProtobufSerializer,
     PydanticSerializer,
 )
-from ._wrappers import HMACSerializer, FernetSerializer, GZipSerializer
+from ._wrappers import FernetSerializer, GZipSerializer, HMACSerializer
 
 
 __all__ = [
