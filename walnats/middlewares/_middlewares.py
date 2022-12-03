@@ -1,17 +1,18 @@
 from __future__ import annotations
 
 import logging
-from functools import lru_cache
 from dataclasses import dataclass
+from functools import lru_cache
 from typing import TYPE_CHECKING
 
 from ._base import Middleware
 
 
 if TYPE_CHECKING:
-    from .._context import Context, ErrorContext, OkContext
-    from datadog.dogstatsd import DogStatsd
     import prometheus_client
+    from datadog.dogstatsd import DogStatsd
+
+    from .._context import Context, ErrorContext, OkContext
 
 
 @dataclass(frozen=True)
