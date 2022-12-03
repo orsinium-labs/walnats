@@ -56,6 +56,11 @@ class Actor(Generic[T, R]):
             on this machine. The best number depends on available resources and
             the handler performance. Keep it low for slow handlers, keep it high for
             highly concurrent handlers.
+        job_timeout: how long at most the handler execution can take for a single message.
+            If this timeout is reached, asyncio.CancelledError is raised in handler, and
+            then all the same things happen as for regular failure: on_failure hooks,
+            log message, nak. Doesn't do anything for sync jobs without `execute_in`
+            specified.
         execute_in: set it to run the handler in a thread or in a process.
             Use threads for slow IO-bound non-async/await handlers.
             Use processes for slow CPU-bound handlers.
@@ -68,13 +73,14 @@ class Actor(Generic[T, R]):
 
     # settings for the nats consumer
     description: str | None = None
-    ack_wait: float = 30
+    ack_wait: float = 16
     max_attempts: int | None = None
     max_ack_pending: int = 1000
 
     # settings for local job processing
     middlewares: tuple[Middleware, ...] = ()
     max_jobs: int = 16
+    job_timeout: float = 32
     execute_in: Literal['thread', 'process'] | None = None
 
     @property
@@ -215,11 +221,17 @@ class Actor(Generic[T, R]):
 
                 if executor is not None:
                     loop = asyncio.get_running_loop()
-                    result = await loop.run_in_executor(executor, self.handler, event)
+                    result = await asyncio.wait_for(
+                        loop.run_in_executor(executor, self.handler, event),
+                        timeout=self.job_timeout,
+                    )
                 else:
                     result = self.handler(event)
                     if asyncio.iscoroutine(result):
-                        result = await result
+                        result = await asyncio.wait_for(
+                            result,
+                            timeout=self.job_timeout,
+                        )
         except (Exception, asyncio.CancelledError) as exc:
             pulse_task.cancel()
             logger.exception(f'Unhandled {type(exc).__name__} in "{self.name}" actor')
