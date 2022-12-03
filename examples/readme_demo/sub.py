@@ -1,5 +1,7 @@
 import asyncio
+
 import walnats
+
 from .events import COUNT
 
 
