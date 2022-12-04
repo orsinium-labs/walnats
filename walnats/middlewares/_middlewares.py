@@ -9,10 +9,20 @@ from ._base import Middleware
 
 
 if TYPE_CHECKING:
-    import prometheus_client
     from datadog.dogstatsd import DogStatsd
 
     from .._context import Context, ErrorContext, OkContext
+
+
+try:
+    import prometheus_client
+except ImportError:
+    prometheus_client = None  # type: ignore[assignment]
+
+try:
+    import sentry_sdk
+except ImportError:
+    sentry_sdk = None  # type: ignore[assignment]
 
 
 @dataclass(frozen=True)
@@ -80,11 +90,15 @@ class StatsdMiddleware(Middleware):
 
 @lru_cache(maxsize=256)
 def _get_prometheus_counter(name: str, descr: str) -> prometheus_client.Counter:
+    if prometheus_client is None:
+        raise ImportError('prometheus-client is not installed')
     return prometheus_client.Counter(name=name, documentation=descr)
 
 
 @lru_cache(maxsize=256)
 def _get_prometheus_histogram(name: str, descr: str) -> prometheus_client.Histogram:
+    if prometheus_client is None:
+        raise ImportError('prometheus-client is not installed')
     return prometheus_client.Histogram(name=name, documentation=descr)
 
 
@@ -114,3 +128,11 @@ class PrometheusMiddleware(Middleware):
             name=f'walnats.{ctx.actor.event.name}.{ctx.actor.name}.duration',
             documentation='How long it took for handler to process message',
         ).observe(ctx.duration)
+
+
+@dataclass(frozen=True)
+class SentryMiddleware(Middleware):
+    def on_failure(self, ctx: ErrorContext) -> None:
+        if sentry_sdk is None:
+            raise ImportError('sentry-sdk is not installed')
+        sentry_sdk.capture_exception(ctx.exception)
