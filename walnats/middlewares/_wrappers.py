@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+import time
 from typing import TYPE_CHECKING, Coroutine
 
 from ._base import Middleware
@@ -12,9 +13,7 @@ if TYPE_CHECKING:
 
 @dataclass
 class ErrorThresholdMiddleware(Middleware):
-    """
-    Trigger on_failure of the wrapped middleware only if there are too many
-    sequential errors.
+    """Trigger on_failure only if there are too many sequential errors.
 
     The errors are counted per actor, per message, and overall.
     The counter is reset when there is at least one successfully processed message.
@@ -57,4 +56,54 @@ class ErrorThresholdMiddleware(Middleware):
             return self.middleware.on_failure(ctx)
         self._overall += 1
         self._per_actor[actor_name] += 1
+        return None
+
+
+@dataclass
+class FrequencyMiddleware(Middleware):
+    """Trigger middleware only once in the given timeframe.
+
+    The on_start and on_success are triggered only once per actor in the given timeframe.
+    The on_failure is triggered once per error message per actor in the given timeframe.
+
+    Use it to avoid spamming your notifications channel with many copies of the same
+    message when shit hits the fan.
+
+    Args:
+        middleware: middleware to trigger.
+        timeframe: how long (in seconds) the deduplication window should be.
+    """
+    middleware: Middleware
+    timeframe: float = 600
+
+    _last_trigger_start: dict[str, float] = field(default_factory=dict)
+    _last_trigger_ok: dict[str, float] = field(default_factory=dict)
+    _last_trigger_err: dict[str, float] = field(default_factory=dict)
+    _reported_errors: dict[str, set[str]] = field(default_factory=dict)
+
+    def on_start(self, ctx: Context) -> Coroutine[None, None, None] | None:
+        actor_name = f'{ctx.actor.event.name}.{ctx.actor.name}'
+        now = time.monotonic()
+        if now - self._last_trigger_start.get(actor_name, 0) > self.timeframe:
+            self._last_trigger_start[actor_name] = now
+            return self.middleware.on_start(ctx)
+        return None
+
+    def on_success(self, ctx: OkContext) -> Coroutine[None, None, None] | None:
+        actor_name = f'{ctx.actor.event.name}.{ctx.actor.name}'
+        now = time.monotonic()
+        if now - self._last_trigger_ok.get(actor_name, 0) > self.timeframe:
+            self._last_trigger_ok[actor_name] = now
+            return self.middleware.on_success(ctx)
+        return None
+
+    def on_failure(self, ctx: ErrorContext) -> Coroutine[None, None, None] | None:
+        actor_name = f'{ctx.actor.event.name}.{ctx.actor.name}'
+        now = time.monotonic()
+        if now - self._last_trigger_err.get(actor_name, 0) > self.timeframe:
+            self._last_trigger_err[actor_name] = now
+            err = str(ctx.exception)
+            if err not in self._reported_errors.setdefault(actor_name, set()):
+                return self.middleware.on_failure(ctx)
+            self._reported_errors[actor_name].add(err)
         return None
