@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from contextlib import asynccontextmanager
-from typing import TYPE_CHECKING, AsyncIterator
+from typing import TYPE_CHECKING, AsyncIterator, Iterator
 
 import nats
 
@@ -32,6 +32,11 @@ class Actors:
             if actor.name == name:
                 return actor
         return None
+
+    def __iter__(self) -> Iterator[Actor]:
+        """Iterate over all registered actors.
+        """
+        return iter(self._actors)
 
     @asynccontextmanager
     async def connect(

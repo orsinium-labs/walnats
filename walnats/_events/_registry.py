@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from contextlib import asynccontextmanager
-from typing import TYPE_CHECKING, AsyncIterator
+from typing import TYPE_CHECKING, AsyncIterator, Iterator
 
 import nats
 
@@ -32,6 +32,11 @@ class Events:
             if event.name == name:
                 return event
         return None
+
+    def __iter__(self) -> Iterator[BaseEvent]:
+        """Iterate over all registered events.
+        """
+        return iter(self._events)
 
     @asynccontextmanager
     async def connect(
