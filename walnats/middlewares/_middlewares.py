@@ -27,7 +27,7 @@ except ImportError:
 
 @dataclass(frozen=True)
 class ExtraLogMiddleware(Middleware):
-    """Hooks to write logs with ``extra`` fields using ``logging``.
+    """Write logs with ``extra`` fields using ``logging``.
 
     The ``extra`` fields aren't shown by default, you need to specifically
     configure a logs formatter that supports it. For example, ``python-json-logger``.
@@ -61,7 +61,7 @@ class ExtraLogMiddleware(Middleware):
 
 @dataclass(frozen=True)
 class StatsdMiddleware(Middleware):
-    """Hooks to emit statsd metrics using Datadog statsd client.
+    """Emit statsd metrics using Datadog statsd client.
 
     We use Datadog statsd client because it is (compared to all alternatives)
     well maintained, type safe, and supports tags.
@@ -104,7 +104,7 @@ def _get_prometheus_histogram(name: str, descr: str) -> prometheus_client.Histog
 
 @dataclass(frozen=True)
 class PrometheusMiddleware(Middleware):
-    """Hooks to emit prometheus metrics.
+    """Emit prometheus metrics.
     """
 
     def on_start(self, ctx: Context) -> None:
@@ -132,6 +132,9 @@ class PrometheusMiddleware(Middleware):
 
 @dataclass(frozen=True)
 class SentryMiddleware(Middleware):
+    """Report actor failures into Sentry using the official Sentry SDK.
+    """
+
     def on_failure(self, ctx: ErrorContext) -> None:
         if sentry_sdk is None:
             raise ImportError('sentry-sdk is not installed')
