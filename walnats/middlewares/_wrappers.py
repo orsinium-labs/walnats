@@ -79,7 +79,7 @@ class FrequencyMiddleware(Middleware):
     _last_trigger_start: dict[str, float] = field(default_factory=dict)
     _last_trigger_ok: dict[str, float] = field(default_factory=dict)
     _last_trigger_err: dict[str, float] = field(default_factory=dict)
-    _reported_errors: dict[str, set[str]] = field(default_factory=dict)
+    _reported_errors: dict[str, set[type[BaseException]]] = field(default_factory=dict)
 
     def on_start(self, ctx: Context) -> Coroutine[None, None, None] | None:
         actor_name = f'{ctx.actor.event.name}.{ctx.actor.name}'
@@ -102,8 +102,9 @@ class FrequencyMiddleware(Middleware):
         now = time.monotonic()
         if now - self._last_trigger_err.get(actor_name, 0) > self.timeframe:
             self._last_trigger_err[actor_name] = now
-            err = str(ctx.exception)
-            if err not in self._reported_errors.setdefault(actor_name, set()):
+            err = type(ctx.exception)
+            reported_errors = self._reported_errors.setdefault(actor_name, set())
+            if err not in reported_errors:
                 return self.middleware.on_failure(ctx)
-            self._reported_errors[actor_name].add(err)
+            reported_errors.add(err)
         return None

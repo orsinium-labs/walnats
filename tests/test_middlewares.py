@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+from collections import Counter
 import logging
 from typing import TYPE_CHECKING, Callable
 
@@ -15,9 +16,23 @@ if TYPE_CHECKING:
     from _pytest.logging import LogCaptureFixture
 
 
+class MockMiddleware(walnats.middlewares.Middleware):
+    def __init__(self) -> None:
+        self.hist: list[str] = []
+
+    def on_start(self, ctx) -> None:
+        self.hist.append('on_start')
+
+    def on_success(self, ctx) -> None:
+        self.hist.append('on_success')
+
+    def on_failure(self, ctx) -> None:
+        self.hist.append('on_failure')
+
+
 async def run_actor(
     handler: Callable,
-    message: str,
+    messages: str | list[str],
     *middlewares: walnats.middlewares.Middleware,
     **kwargs,
 ) -> None:
@@ -25,13 +40,15 @@ async def run_actor(
     actor = walnats.Actor(get_random_name(), event, handler, middlewares=middlewares)
     events_reg = walnats.Events(actor.event)
     actors_reg = walnats.Actors(actor)
+    if isinstance(messages, str):
+        messages = [messages]
     async with events_reg.connect() as pub_conn, actors_reg.connect() as sub_conn:
         await pub_conn.register()
         await sub_conn.register()
-        await asyncio.gather(
-            sub_conn.listen(burst=True, **kwargs),
-            pub_conn.emit(event, message),
-        )
+        await asyncio.gather(*[pub_conn.emit(event, m) for m in messages])
+        if len(messages) > 1:
+            await asyncio.sleep(.01)
+        await sub_conn.listen(burst=True, batch=len(messages), **kwargs)
 
 
 @pytest.mark.asyncio
@@ -128,7 +145,7 @@ async def test_custom_async__on_failure() -> None:
 
 
 @pytest.mark.asyncio
-async def test_extra_log_middleware(caplog: LogCaptureFixture) -> None:
+async def test_ExtraLogMiddleware(caplog: LogCaptureFixture) -> None:
     caplog.set_level(logging.DEBUG)
 
     async def handler(msg: str) -> None:
@@ -145,7 +162,7 @@ async def test_extra_log_middleware(caplog: LogCaptureFixture) -> None:
 
 
 @pytest.mark.asyncio
-async def test_extra_log_middleware__on_failure(caplog: LogCaptureFixture) -> None:
+async def test_ExtraLogMiddleware__on_failure(caplog: LogCaptureFixture) -> None:
     caplog.set_level(logging.DEBUG)
 
     async def handler(msg: str) -> None:
@@ -160,3 +177,43 @@ async def test_extra_log_middleware__on_failure(caplog: LogCaptureFixture) -> No
     assert records[0].message == 'event received'
     assert records[1].message.startswith('Unhandled ZeroDivisionError in')
     assert records[2].message == 'actor failed'
+
+
+@pytest.mark.asyncio
+async def test_ErrorThresholdMiddleware(caplog: LogCaptureFixture) -> None:
+    caplog.set_level(logging.DEBUG)
+
+    async def handler(msg: str) -> None:
+        1/0
+
+    mw = MockMiddleware()
+    await run_actor(handler, 'hi', walnats.middlewares.ErrorThresholdMiddleware(mw))
+    assert mw.hist == ['on_start']
+
+    mw = MockMiddleware()
+    await run_actor(
+        handler,
+        ['hi'] * 40,
+        walnats.middlewares.ErrorThresholdMiddleware(mw),
+    )
+    assert Counter(mw.hist) == Counter(dict(on_start=40, on_failure=19))
+
+
+@pytest.mark.asyncio
+async def test_FrequencyMiddleware(caplog: LogCaptureFixture) -> None:
+    caplog.set_level(logging.DEBUG)
+    switch = False
+
+    async def handler(msg: str) -> None:
+        nonlocal switch
+        switch = not switch
+        if switch:
+            1/0
+
+    mw = MockMiddleware()
+    await run_actor(
+        handler,
+        ['hi'] * 40,
+        walnats.middlewares.FrequencyMiddleware(mw),
+    )
+    assert Counter(mw.hist) == Counter(dict(on_success=1, on_failure=1, on_start=1))
