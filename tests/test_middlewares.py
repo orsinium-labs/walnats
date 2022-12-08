@@ -241,3 +241,20 @@ async def test_StatsdMiddleware(udp_server: UDPLogProtocol) -> None:
         (r'walnats\..+\..+\.duration:0.\d+\|h', 1),
     ]
     fuzzy_match_counter(udp_server.hist, expected)
+
+
+@pytest.mark.asyncio
+async def test_PrometheusMiddleware() -> None:
+    switch = False
+
+    async def handler(msg: str) -> None:
+        nonlocal switch
+        switch = not switch
+        if switch:
+            1/0
+
+    await run_actor(
+        handler,
+        ['hi'] * 40,
+        walnats.middlewares.PrometheusMiddleware(),
+    )

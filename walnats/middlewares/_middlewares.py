@@ -9,6 +9,7 @@ from ._base import Middleware
 
 
 if TYPE_CHECKING:
+    from prometheus_client import Counter, Histogram
     from datadog.dogstatsd import DogStatsd
 
     from .._context import Context, ErrorContext, OkContext
@@ -89,45 +90,53 @@ class StatsdMiddleware(Middleware):
 
 
 @lru_cache(maxsize=256)
-def _get_prometheus_counter(name: str, descr: str) -> prometheus_client.Counter:
+def _get_prometheus_counter(name: str, descr: str) -> Counter:
     if prometheus_client is None:
         raise ImportError('prometheus-client is not installed')
-    return prometheus_client.Counter(name=name, documentation=descr)
+    return prometheus_client.Counter(
+        name=name,
+        documentation=descr,
+        labelnames=['event', 'agent'],
+    )
 
 
 @lru_cache(maxsize=256)
-def _get_prometheus_histogram(name: str, descr: str) -> prometheus_client.Histogram:
+def _get_prometheus_histogram(name: str, descr: str) -> Histogram:
     if prometheus_client is None:
         raise ImportError('prometheus-client is not installed')
-    return prometheus_client.Histogram(name=name, documentation=descr)
+    return prometheus_client.Histogram(
+        name=name,
+        documentation=descr,
+        labelnames=['event', 'agent'],
+    )
 
 
 @dataclass(frozen=True)
 class PrometheusMiddleware(Middleware):
-    """Emit prometheus metrics.
+    """Store Prometheus metrics.
     """
 
     def on_start(self, ctx: Context) -> None:
         _get_prometheus_counter(
-            name=f'walnats.{ctx.actor.event.name}.{ctx.actor.name}.started',
-            documentation='How many times handler was called',
-        ).inc()
+            name='walnats_handler_started',
+            descr='How many times handler was called',
+        ).labels(ctx.actor.event.name, ctx.actor.name).inc()
 
     def on_failure(self, ctx: ErrorContext) -> None:
         _get_prometheus_counter(
-            name=f'walnats.{ctx.actor.event.name}.{ctx.actor.name}.failed',
-            documentation='How many times handler failed',
-        ).inc()
+            name='walnats_handler_failed',
+            descr='How many times handler failed',
+        ).labels(ctx.actor.event.name, ctx.actor.name).inc()
 
     def on_success(self, ctx: OkContext) -> None:
         _get_prometheus_counter(
-            name=f'walnats.{ctx.actor.event.name}.{ctx.actor.name}.processed',
-            documentation='How many messages handler processed',
-        ).inc()
+            name='walnats_handler_succeeded',
+            descr='How many messages handler processed',
+        ).labels(ctx.actor.event.name, ctx.actor.name).inc()
         _get_prometheus_histogram(
-            name=f'walnats.{ctx.actor.event.name}.{ctx.actor.name}.duration',
-            documentation='How long it took for handler to process message',
-        ).observe(ctx.duration)
+            name='walnats_handler_duration',
+            descr='How long it took for handler to process message',
+        ).labels(ctx.actor.event.name, ctx.actor.name).observe(ctx.duration)
 
 
 @dataclass(frozen=True)
