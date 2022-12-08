@@ -16,6 +16,14 @@ if TYPE_CHECKING:
     from _pytest.logging import LogCaptureFixture
 
 
+async def noop(msg: str) -> None:
+    pass
+
+
+async def explode(msg: str) -> None:
+    1/0
+
+
 class MockMiddleware(walnats.middlewares.Middleware):
     def __init__(self) -> None:
         self.hist: list[str] = []
@@ -147,11 +155,7 @@ async def test_custom_async__on_failure() -> None:
 @pytest.mark.asyncio
 async def test_ExtraLogMiddleware(caplog: LogCaptureFixture) -> None:
     caplog.set_level(logging.DEBUG)
-
-    async def handler(msg: str) -> None:
-        pass
-
-    await run_actor(handler, 'hi', walnats.middlewares.ExtraLogMiddleware())
+    await run_actor(noop, 'hi', walnats.middlewares.ExtraLogMiddleware())
     records = []
     for record in caplog.records:
         if record.name.startswith('walnats'):
@@ -164,11 +168,7 @@ async def test_ExtraLogMiddleware(caplog: LogCaptureFixture) -> None:
 @pytest.mark.asyncio
 async def test_ExtraLogMiddleware__on_failure(caplog: LogCaptureFixture) -> None:
     caplog.set_level(logging.DEBUG)
-
-    async def handler(msg: str) -> None:
-        1/0
-
-    await run_actor(handler, 'hi', walnats.middlewares.ExtraLogMiddleware())
+    await run_actor(explode, 'hi', walnats.middlewares.ExtraLogMiddleware())
     records = []
     for record in caplog.records:
         if record.name.startswith('walnats'):
@@ -181,17 +181,13 @@ async def test_ExtraLogMiddleware__on_failure(caplog: LogCaptureFixture) -> None
 
 @pytest.mark.asyncio
 async def test_ErrorThresholdMiddleware() -> None:
-    async def handler(msg: str) -> None:
-        1/0
-
     mw = MockMiddleware()
-    await run_actor(handler, 'hi', walnats.middlewares.ErrorThresholdMiddleware(mw))
+    await run_actor(explode, 'hi', walnats.middlewares.ErrorThresholdMiddleware(mw))
     assert mw.hist == ['on_start']
 
     mw = MockMiddleware()
     await run_actor(
-        handler,
-        ['hi'] * 40,
+        explode, ['hi'] * 40,
         walnats.middlewares.ErrorThresholdMiddleware(mw),
     )
     assert Counter(mw.hist) == Counter(dict(on_start=40, on_failure=19))
@@ -209,8 +205,7 @@ async def test_FrequencyMiddleware() -> None:
 
     mw = MockMiddleware()
     await run_actor(
-        handler,
-        ['hi'] * 40,
+        handler, ['hi'] * 40,
         walnats.middlewares.FrequencyMiddleware(mw),
     )
     assert Counter(mw.hist) == Counter(dict(on_success=1, on_failure=1, on_start=1))
@@ -230,8 +225,7 @@ async def test_StatsdMiddleware(udp_server: UDPLogProtocol) -> None:
 
     client = DogStatsd(port=udp_server.port, disable_telemetry=True)
     await run_actor(
-        handler,
-        ['hi'] * 40,
+        handler, ['hi'] * 40,
         walnats.middlewares.StatsdMiddleware(client),
     )
     expected = [
@@ -254,7 +248,11 @@ async def test_PrometheusMiddleware() -> None:
             1/0
 
     await run_actor(
-        handler,
-        ['hi'] * 40,
+        handler, ['hi'] * 40,
         walnats.middlewares.PrometheusMiddleware(),
     )
+
+
+@pytest.mark.asyncio
+async def test_SentryMiddleware() -> None:
+    await run_actor(explode, 'hi', walnats.middlewares.SentryMiddleware())

@@ -65,6 +65,7 @@ exclude_lines = [
     "if TYPE_CHECKING",
     "    pass",
     "except ImportError:",
+    "raise NotImplementedError",
 ]
 
 [tool.coverage.run]
