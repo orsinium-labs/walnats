@@ -9,7 +9,7 @@ import pytest
 
 import walnats
 
-from .helpers import get_random_name
+from .helpers import get_random_name, UDPLogProtocol, fuzzy_match_counter
 
 
 if TYPE_CHECKING:
@@ -180,9 +180,7 @@ async def test_ExtraLogMiddleware__on_failure(caplog: LogCaptureFixture) -> None
 
 
 @pytest.mark.asyncio
-async def test_ErrorThresholdMiddleware(caplog: LogCaptureFixture) -> None:
-    caplog.set_level(logging.DEBUG)
-
+async def test_ErrorThresholdMiddleware() -> None:
     async def handler(msg: str) -> None:
         1/0
 
@@ -200,8 +198,7 @@ async def test_ErrorThresholdMiddleware(caplog: LogCaptureFixture) -> None:
 
 
 @pytest.mark.asyncio
-async def test_FrequencyMiddleware(caplog: LogCaptureFixture) -> None:
-    caplog.set_level(logging.DEBUG)
+async def test_FrequencyMiddleware() -> None:
     switch = False
 
     async def handler(msg: str) -> None:
@@ -217,3 +214,30 @@ async def test_FrequencyMiddleware(caplog: LogCaptureFixture) -> None:
         walnats.middlewares.FrequencyMiddleware(mw),
     )
     assert Counter(mw.hist) == Counter(dict(on_success=1, on_failure=1, on_start=1))
+
+
+@pytest.mark.asyncio
+async def test_StatsdMiddleware(udp_server: UDPLogProtocol) -> None:
+    from datadog.dogstatsd import DogStatsd
+
+    switch = False
+
+    async def handler(msg: str) -> None:
+        nonlocal switch
+        switch = not switch
+        if switch:
+            1/0
+
+    client = DogStatsd(port=udp_server.port, disable_telemetry=True)
+    await run_actor(
+        handler,
+        ['hi'] * 40,
+        walnats.middlewares.StatsdMiddleware(client),
+    )
+    expected = [
+        (r'walnats\..+\..+\.started:1\|c', 16),
+        (r'walnats\..+\..+\.failed:1\|c', 2),
+        (r'walnats\..+\..+\.processed:1\|c', 1),
+        (r'walnats\..+\..+\.duration:0.\d+\|h', 1),
+    ]
+    fuzzy_match_counter(udp_server.hist, expected)
