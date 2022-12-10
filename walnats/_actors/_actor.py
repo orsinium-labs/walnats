@@ -73,6 +73,11 @@ class Actor(Generic[T, R]):
             The delay is used only when the message is explicitly nak'ed. If instead
             the whole instance explodes or there is a network issue, the message
             will be redelivered as soon as `ack_wait` is reached.
+        pulse: keep sending pulse into Nats JetStream while processing the message.
+            The pulse signal makes sure that the message won't be redelivered to another
+            instance of actor while this one is in progress. Disabling the pulse will
+            prevent the message being stuck if a handler stucks, but that also means
+            the message must be processed faster that `ack_wait`.
     """
     name: str
     event: BaseEvent[T, R]
@@ -90,6 +95,7 @@ class Actor(Generic[T, R]):
     job_timeout: float = 32
     execute_in: Literal['thread', 'process'] | None = None
     retry_delay: Sequence[float] = (1, 2, 4, 8)
+    pulse: bool = True
 
     @property
     def consumer_name(self) -> str:
@@ -209,10 +215,11 @@ class Actor(Generic[T, R]):
         prefix = f'actors/{self.name}/'
         if msg.metadata.sequence:
             prefix += f'{msg.metadata.sequence.stream}/'
-        pulse_task = asyncio.create_task(
-            self._pulse(msg),
-            name=f'{prefix}pulse',
-        )
+        if self.pulse:
+            pulse_task = asyncio.create_task(
+                self._pulse(msg),
+                name=f'{prefix}pulse',
+            )
         event = None
         try:
             async with actor_sem, job_sem:
