@@ -4,8 +4,6 @@ import asyncio
 import time
 from contextlib import contextmanager
 
-import pytest
-
 import walnats
 
 from .helpers import get_random_name
@@ -47,7 +45,6 @@ def duration_between(min_dur: float, max_dur: float):
     assert min_dur <= actual_dur < max_dur
 
 
-@pytest.mark.asyncio
 async def test_many_messages_one_event() -> None:
     received = []
     messages = [f'msg{i}' for i in range(20)]
@@ -67,7 +64,6 @@ async def test_many_messages_one_event() -> None:
         assert set(received) == set(messages)
 
 
-@pytest.mark.asyncio
 async def test_respect_timeout() -> None:
     async def handler(e: str) -> None:
         raise AssertionError('unreachable')
@@ -85,7 +81,6 @@ def slow_handler(e: str) -> None:
     time.sleep(.1)
 
 
-@pytest.mark.asyncio
 async def test_run_in_process_pool() -> None:
     messages = [f'msg{i}' for i in range(20)]
 
@@ -98,7 +93,6 @@ async def test_run_in_process_pool() -> None:
         )
 
 
-@pytest.mark.asyncio
 async def test_run_in_thread_pool() -> None:
     messages = [f'msg{i}' for i in range(20)]
 

@@ -63,7 +63,6 @@ async def run_actor(
         await sub_conn.listen(burst=True, batch=len(messages), **kwargs)
 
 
-@pytest.mark.asyncio
 async def test_custom_sync() -> None:
     triggered = []
 
@@ -85,7 +84,6 @@ async def test_custom_sync() -> None:
     assert triggered == ['on_start', 'handler', 'on_success']
 
 
-@pytest.mark.asyncio
 async def test_custom_sync__on_failure() -> None:
     triggered = []
 
@@ -108,7 +106,6 @@ async def test_custom_sync__on_failure() -> None:
     assert triggered == ['on_start', 'handler', 'on_failure']
 
 
-@pytest.mark.asyncio
 async def test_custom_async() -> None:
     triggered = []
 
@@ -132,7 +129,6 @@ async def test_custom_async() -> None:
     assert set(triggered) == {'on_start', 'handler', 'on_success'}
 
 
-@pytest.mark.asyncio
 async def test_custom_async__on_failure() -> None:
     triggered = []
 
@@ -156,7 +152,6 @@ async def test_custom_async__on_failure() -> None:
     assert set(triggered) == {'on_start', 'handler', 'on_failure'}
 
 
-@pytest.mark.asyncio
 async def test_ExtraLogMiddleware(caplog: LogCaptureFixture) -> None:
     caplog.set_level(logging.DEBUG)
     await run_actor(noop, 'hi', walnats.middlewares.ExtraLogMiddleware())
@@ -169,7 +164,6 @@ async def test_ExtraLogMiddleware(caplog: LogCaptureFixture) -> None:
     assert records[1].message == 'event processed'
 
 
-@pytest.mark.asyncio
 async def test_ExtraLogMiddleware__on_failure(caplog: LogCaptureFixture) -> None:
     caplog.set_level(logging.DEBUG)
     await run_actor(explode, 'hi', walnats.middlewares.ExtraLogMiddleware())
@@ -183,7 +177,6 @@ async def test_ExtraLogMiddleware__on_failure(caplog: LogCaptureFixture) -> None
     assert records[2].message == 'actor failed'
 
 
-@pytest.mark.asyncio
 async def test_ErrorThresholdMiddleware() -> None:
     mw = MockMiddleware()
     await run_actor(explode, 'hi', walnats.middlewares.ErrorThresholdMiddleware(mw))
@@ -197,7 +190,6 @@ async def test_ErrorThresholdMiddleware() -> None:
     assert Counter(mw.hist) == Counter(dict(on_start=40, on_failure=19))
 
 
-@pytest.mark.asyncio
 async def test_FrequencyMiddleware() -> None:
     switch = False
 
@@ -215,7 +207,6 @@ async def test_FrequencyMiddleware() -> None:
     assert Counter(mw.hist) == Counter(dict(on_success=1, on_failure=1, on_start=1))
 
 
-@pytest.mark.asyncio
 async def test_StatsdMiddleware(udp_server: UDPLogProtocol) -> None:
     from datadog.dogstatsd import DogStatsd
 
@@ -241,7 +232,6 @@ async def test_StatsdMiddleware(udp_server: UDPLogProtocol) -> None:
     fuzzy_match_counter(udp_server.hist, expected)
 
 
-@pytest.mark.asyncio
 async def test_PrometheusMiddleware() -> None:
     switch = False
 
@@ -257,13 +247,11 @@ async def test_PrometheusMiddleware() -> None:
     )
 
 
-@pytest.mark.asyncio
 async def test_SentryMiddleware() -> None:
     await run_actor(explode, 'hi', walnats.middlewares.SentryMiddleware())
 
 
 @pytest.mark.skipif(not SENTRY_DSN, reason='SENTRY_DSN env var is not provided')
-@pytest.mark.asyncio
 async def test_SentryMiddleware_real_sentry() -> None:
     with sentry_sdk.init(SENTRY_DSN):
         await run_actor(explode, 'hi', walnats.middlewares.SentryMiddleware())

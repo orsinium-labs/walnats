@@ -3,7 +3,6 @@ from __future__ import annotations
 import asyncio
 
 import pydantic
-import pytest
 
 import walnats
 
@@ -15,7 +14,6 @@ class Model(pydantic.BaseModel):
     age: int
 
 
-@pytest.mark.asyncio
 async def test_emit_consume() -> None:
     event = walnats.Event(get_random_name(), Model)
     events = walnats.Events(event)
@@ -39,7 +37,6 @@ async def test_emit_consume() -> None:
     assert received == message
 
 
-@pytest.mark.asyncio
 async def test_request_response() -> None:
     event = walnats.Event(get_random_name(), str).with_response(int)
     events = walnats.Events(event)

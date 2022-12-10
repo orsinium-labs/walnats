@@ -2,8 +2,6 @@ from __future__ import annotations
 
 import asyncio
 
-import pytest
-
 import walnats
 
 from .helpers import get_random_name
@@ -24,7 +22,6 @@ def test_events_get():
     assert events.get('something') is None
 
 
-@pytest.mark.asyncio
 async def test_events_monitor():
     event = walnats.Event(get_random_name(), str)
     events = walnats.Events(event)
