@@ -36,28 +36,28 @@ class ExtraLogMiddleware(Middleware):
     logger: logging.Logger | logging.LoggerAdapter = logging.getLogger(__package__)
 
     def on_start(self, ctx: Context) -> None:
-        self.logger.debug('event received', extra=dict(
-            actor=ctx.actor.name,
-            event=ctx.actor.event.name,
-            attempt=ctx.metadata.num_delivered,
-        ))
+        self.logger.debug('event received', extra={
+            'actor': ctx.actor.name,
+            'event': ctx.actor.event.name,
+            'attempt': ctx.metadata.num_delivered,
+        })
 
     def on_failure(self, ctx: ErrorContext) -> None:
-        self.logger.exception('actor failed', extra=dict(
-            actor=ctx.actor.name,
-            event=ctx.actor.event.name,
-            attempt=ctx.metadata.num_delivered,
-            exc=str(ctx.exception),
-            exc_type=type(ctx.exception).__name__,
-        ))
+        self.logger.exception('actor failed', extra={
+            'actor': ctx.actor.name,
+            'event': ctx.actor.event.name,
+            'attempt': ctx.metadata.num_delivered,
+            'exc': str(ctx.exception),
+            'exc_type': type(ctx.exception).__name__,
+        })
 
     def on_success(self, ctx: OkContext) -> None:
-        self.logger.debug('event processed', extra=dict(
-            actor=ctx.actor.name,
-            event=ctx.actor.event.name,
-            attempt=ctx.metadata.num_delivered,
-            duration=ctx.duration,
-        ))
+        self.logger.debug('event processed', extra={
+            'actor': ctx.actor.name,
+            'event': ctx.actor.event.name,
+            'attempt': ctx.metadata.num_delivered,
+            'duration': ctx.duration,
+        })
 
 
 @dataclass(frozen=True)
@@ -142,9 +142,32 @@ class PrometheusMiddleware(Middleware):
 @dataclass(frozen=True)
 class SentryMiddleware(Middleware):
     """Report actor failures into Sentry using the official Sentry SDK.
+
+    The failure report will include tags:
+        actor: actor name.
+        event: event name.
+
+    Also, the "additional data" section will have:
+        delivered_at: timestamp when Nats delivered the message to the consumer.
+        stream_seq_id: sequence ID of the message in the Nats JetStream stream.
     """
+
+    # TODO(@orsinium): Can we have a task-local Sentry scope?
+    # sentry_sdk.Hub is thread-local.
+    # Example of making a scope:
+    # https://github.com/jacobsvante/sentry-dramatiq/
 
     def on_failure(self, ctx: ErrorContext) -> None:
         if sentry_sdk is None:
             raise ImportError('sentry-sdk is not installed')
-        sentry_sdk.capture_exception(ctx.exception)
+        sentry_sdk.capture_exception(
+            error=ctx.exception,
+            tags={
+                'actor': ctx.actor.name,
+                'event': ctx.actor.event.name,
+            },
+            extras={
+                'stream_seq_id': ctx.seq_number,
+                'delivered_at': str(ctx.metadata.timestamp),
+            },
+        )

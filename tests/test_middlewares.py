@@ -3,9 +3,11 @@ from __future__ import annotations
 import asyncio
 from collections import Counter
 import logging
+import os
 from typing import TYPE_CHECKING, Callable
 
 import pytest
+import sentry_sdk
 
 import walnats
 
@@ -22,6 +24,8 @@ async def noop(msg: str) -> None:
 
 async def explode(msg: str) -> None:
     1/0
+
+SENTRY_DSN = os.environ.get('SENTRY_DSN')
 
 
 class MockMiddleware(walnats.middlewares.Middleware):
@@ -256,3 +260,11 @@ async def test_PrometheusMiddleware() -> None:
 @pytest.mark.asyncio
 async def test_SentryMiddleware() -> None:
     await run_actor(explode, 'hi', walnats.middlewares.SentryMiddleware())
+
+
+@pytest.mark.skipif(not SENTRY_DSN, reason='SENTRY_DSN env var is not provided')
+@pytest.mark.asyncio
+async def test_SentryMiddleware_real_sentry() -> None:
+    with sentry_sdk.init(SENTRY_DSN):
+        await run_actor(explode, 'hi', walnats.middlewares.SentryMiddleware())
+        sentry_sdk.flush()
