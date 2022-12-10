@@ -4,3 +4,5 @@ __pycache__/
 /.*_cache/
 /dist/
 /.hypothesis/
+/.task/
+/.venvs/

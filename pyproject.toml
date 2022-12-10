@@ -24,11 +24,36 @@ keywords = [
     "celery",
     "microservices",
     "rabbitmq",
+    "arq",
+    "rq",
+    "huey",
+    "event-driven",
+    "distributed",
 ]
-dependencies = []
+dependencies = ["nats-py"]
 
 [project.optional-dependencies]
-test = ["pytest", "pytest-cov"]
+integrations = [
+    "cryptography",
+    "datadog",
+    "marshmallow",
+    "prometheus-client",
+    "pydantic",
+    "sentry-sdk",
+    "msgpack",
+]
+test = [
+    "pytest",
+    "pytest-cov",
+    "pytest-asyncio",
+]
+lint = [
+    "flake8",
+    "isort",
+    "mypy",
+    "types-protobuf",
+    "unify",
+]
 
 [project.urls]
 Source = "https://github.com/orsinium-labs/walnats"
