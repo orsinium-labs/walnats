@@ -139,7 +139,6 @@ class PrometheusMiddleware(Middleware):
         ).labels(ctx.actor.event.name, ctx.actor.name).observe(ctx.duration)
 
 
-@dataclass(frozen=True)
 class SentryMiddleware(Middleware):
     """Report actor failures into Sentry using the official Sentry SDK.
 
@@ -152,14 +151,20 @@ class SentryMiddleware(Middleware):
         stream_seq_id: sequence ID of the message in the Nats JetStream stream.
     """
 
+    def __init__(self) -> None:
+        from sentry_sdk.integrations.logging import ignore_logger
+
+        # disable capturing log message about actor failure
+        ignore_logger('walnats.actor')
+
     # TODO(@orsinium): Can we have a task-local Sentry scope?
     # sentry_sdk.Hub is thread-local.
     # Example of making a scope:
     # https://github.com/jacobsvante/sentry-dramatiq/
 
     def on_failure(self, ctx: ErrorContext) -> None:
-        if sentry_sdk is None:
-            raise ImportError('sentry-sdk is not installed')
+        # shouldn't fail because we import from sentry_sdk in __init__
+        assert sentry_sdk is not None, 'sentry-sdk is not installed'
         sentry_sdk.capture_exception(
             error=ctx.exception,
             tags={

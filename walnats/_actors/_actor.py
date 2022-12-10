@@ -19,7 +19,7 @@ from ..middlewares import Middleware
 
 T = TypeVar('T')
 R = TypeVar('R')
-logger = getLogger(__package__)
+logger = getLogger('walnats.actor')
 
 
 @dataclass(frozen=True)
