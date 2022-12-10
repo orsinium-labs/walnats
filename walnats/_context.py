@@ -23,6 +23,13 @@ class Context:
     def metadata(self) -> Msg.Metadata:
         return self._msg.metadata
 
+    @cached_property
+    def seq_number(self) -> int:
+        """Sequence ID of the message in Nats JetStream.
+        """
+        seq = self.metadata.sequence
+        return seq.stream if seq else 0
+
     @property
     def is_first_attempt(self) -> bool:
         """Check if this is the first attempt to handle the message.

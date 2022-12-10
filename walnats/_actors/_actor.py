@@ -6,7 +6,7 @@ from concurrent.futures import Executor
 from dataclasses import dataclass
 from logging import getLogger
 from time import perf_counter
-from typing import Awaitable, Callable, Generic, Literal, TypeVar
+from typing import Awaitable, Callable, Generic, Literal, Sequence, TypeVar
 
 import nats.js
 from nats.aio.msg import Msg
@@ -66,6 +66,13 @@ class Actor(Generic[T, R]):
             Use processes for slow CPU-bound handlers.
             For running in a process, the handler and the message must be pickle-able.
             If ``execute_in`` is set, the handler must be non-async/await.
+        retry_delay: a sequence of delays (in seconds) for each retry.
+            If the attempt number is higher than the sequence len, the las item (-1)
+            will be used. The default value is `(1, 2, 4, 8)`, so third retry will be 4s,
+            5th will be 8s, and 12th will still be 8.
+            The delay is used only when the message is explicitly nak'ed. If instead
+            the whole instance explodes or there is a network issue, the message
+            will be redelivered as soon as `ack_wait` is reached.
     """
     name: str
     event: BaseEvent[T, R]
@@ -82,6 +89,7 @@ class Actor(Generic[T, R]):
     max_jobs: int = 16
     job_timeout: float = 32
     execute_in: Literal['thread', 'process'] | None = None
+    retry_delay: Sequence[float] = (1, 2, 4, 8)
 
     @property
     def consumer_name(self) -> str:
@@ -200,7 +208,7 @@ class Actor(Generic[T, R]):
     ) -> None:
         prefix = f'actors/{self.name}/'
         if msg.metadata.sequence:
-            prefix += f'{msg.metadata.sequence.consumer}/'
+            prefix += f'{msg.metadata.sequence.stream}/'
         pulse_task = asyncio.create_task(
             self._pulse(msg),
             name=f'{prefix}pulse',
@@ -235,7 +243,7 @@ class Actor(Generic[T, R]):
         except (Exception, asyncio.CancelledError) as exc:
             pulse_task.cancel()
             logger.exception(f'Unhandled {type(exc).__name__} in "{self.name}" actor')
-            tasks.start(msg.nak(), name=f'{prefix}nak')
+            tasks.start(msg.nak(delay=self._get_nak_delay(msg)), name=f'{prefix}nak')
 
             # trigger on_failure hooks
             if self.middlewares:
@@ -270,3 +278,14 @@ class Actor(Generic[T, R]):
         while True:
             await asyncio.sleep(self.ack_wait / 2)
             await msg.in_progress()
+
+    def _get_nak_delay(self, msg: Msg) -> float:
+        delays = self.retry_delay
+        if not delays:
+            return 0
+        attempt = msg.metadata.num_delivered
+        if attempt is None:
+            return delays[0]
+        if attempt >= len(delays):
+            return delays[-1]
+        return delays[attempt]
