@@ -96,9 +96,9 @@ def test_hmac_roundtrip(message: object) -> None:
     dec = hmac_ser.decode(enc)
     assert message == dec
 
-    with pytest.raises(ValueError, match="the message is corrupted or altered"):
+    with pytest.raises(ValueError, match='the message is corrupted or altered'):
         hmac_ser.decode(enc + b'a')
-    with pytest.raises(ValueError, match="the message is corrupted or altered"):
+    with pytest.raises(ValueError, match='the message is corrupted or altered'):
         hmac_ser.decode(b'a' + enc)
 
 

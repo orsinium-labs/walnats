@@ -1,8 +1,10 @@
 from __future__ import annotations
+
 import asyncio
 
 import pytest
-from .helpers import random_port, UDPLogProtocol
+
+from .helpers import UDPLogProtocol, random_port
 
 
 @pytest.fixture

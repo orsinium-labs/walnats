@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 import asyncio
-from collections import Counter
 import logging
 import os
+from collections import Counter
 from typing import TYPE_CHECKING, Callable
 
 import pytest
@@ -11,7 +11,7 @@ import sentry_sdk
 
 import walnats
 
-from .helpers import get_random_name, UDPLogProtocol, fuzzy_match_counter
+from .helpers import UDPLogProtocol, fuzzy_match_counter, get_random_name
 
 
 if TYPE_CHECKING:
@@ -23,7 +23,7 @@ async def noop(msg: str) -> None:
 
 
 async def explode(msg: str) -> None:
-    1/0
+    1 / 0
 
 SENTRY_DSN = os.environ.get('SENTRY_DSN')
 
@@ -205,7 +205,7 @@ async def test_FrequencyMiddleware() -> None:
         nonlocal switch
         switch = not switch
         if switch:
-            1/0
+            1 / 0
 
     mw = MockMiddleware()
     await run_actor(
@@ -225,7 +225,7 @@ async def test_StatsdMiddleware(udp_server: UDPLogProtocol) -> None:
         nonlocal switch
         switch = not switch
         if switch:
-            1/0
+            1 / 0
 
     client = DogStatsd(port=udp_server.port, disable_telemetry=True)
     await run_actor(
@@ -249,7 +249,7 @@ async def test_PrometheusMiddleware() -> None:
         nonlocal switch
         switch = not switch
         if switch:
-            1/0
+            1 / 0
 
     await run_actor(
         handler, ['hi'] * 40,

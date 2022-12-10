@@ -9,8 +9,8 @@ from ._base import Middleware
 
 
 if TYPE_CHECKING:
-    from prometheus_client import Counter, Histogram
     from datadog.dogstatsd import DogStatsd
+    from prometheus_client import Counter, Histogram
 
     from .._context import Context, ErrorContext, OkContext
 

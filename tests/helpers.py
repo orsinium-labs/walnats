@@ -1,10 +1,11 @@
 from __future__ import annotations
-from collections import Counter
-from random import choice
-from string import ascii_letters
+
 import asyncio
 import re
 import socket
+from collections import Counter
+from random import choice
+from string import ascii_letters
 
 
 class UDPLogProtocol(asyncio.DatagramProtocol):

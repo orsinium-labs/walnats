@@ -124,11 +124,20 @@ class EventWithResponse(BaseEvent[T, R]):
     response_serializer: Serializer[R] | None = None
 
     def encode_response(self, msg: R) -> bytes:
+        """Convert response payload into bytes.
+
+        Used by Actor to transfer the response over the network.
+        """
         if self.response_serializer is None:
             self.response_serializer = get_serializer(self.response_schema)
         return self.response_serializer.encode(msg)
 
     def decode_response(self, data: bytes) -> R:
+        """Convert raw bytes from event payload into a Python type.
+
+        Used by `ConnectedEvents.request` to extract the response from Nats JetStream
+        message payload.
+        """
         if self.response_serializer is None:
             self.response_serializer = get_serializer(self.response_schema)
         return self.response_serializer.decode(data)

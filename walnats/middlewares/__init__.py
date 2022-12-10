@@ -1,6 +1,10 @@
 from ._base import Middleware
-from ._middlewares import ExtraLogMiddleware, StatsdMiddleware, SentryMiddleware, PrometheusMiddleware
+from ._middlewares import (
+    ExtraLogMiddleware, PrometheusMiddleware, SentryMiddleware,
+    StatsdMiddleware,
+)
 from ._wrappers import ErrorThresholdMiddleware, FrequencyMiddleware
+
 
 __all__ = [
     'ErrorThresholdMiddleware',
