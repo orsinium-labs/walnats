@@ -1,7 +1,7 @@
 from ._base import Middleware
 from ._middlewares import (
     ExtraLogMiddleware, PrometheusMiddleware, SentryMiddleware,
-    StatsdMiddleware,
+    StatsdMiddleware, ZipkinMiddleware,
 )
 from ._wrappers import ErrorThresholdMiddleware, FrequencyMiddleware
 
@@ -14,4 +14,5 @@ __all__ = [
     'PrometheusMiddleware',
     'SentryMiddleware',
     'StatsdMiddleware',
+    'ZipkinMiddleware',
 ]

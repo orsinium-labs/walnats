@@ -6,8 +6,10 @@ import os
 from collections import Counter
 from typing import TYPE_CHECKING, Callable
 
+import aiozipkin
 import pytest
 import sentry_sdk
+from aiozipkin.transport import StubTransport
 
 import walnats
 
@@ -256,3 +258,25 @@ async def test_SentryMiddleware_real_sentry() -> None:
     with sentry_sdk.init(SENTRY_DSN):
         await run_actor(explode, 'hi', walnats.middlewares.SentryMiddleware())
         sentry_sdk.flush()
+
+
+async def test_ZipkinMiddleware() -> None:
+    endpoint = aiozipkin.create_endpoint('test_service')
+    transport = StubTransport()
+    async with aiozipkin.create_custom(endpoint, transport) as tracer:
+
+        await run_actor(explode, 'hi', walnats.middlewares.ZipkinMiddleware(tracer))
+        assert len(transport.records) == 1
+        r = transport.records[0]
+        tags = r.asdict()['tags']
+        assert set(tags) == {'event', 'error'}
+        assert tags['error'] == 'division by zero'
+
+        await run_actor(noop, 'hi', walnats.middlewares.ZipkinMiddleware(tracer))
+        assert len(transport.records) == 2
+        r = transport.records[-1]
+        tags = r.asdict()['tags']
+        assert set(tags) == {'event'}
+
+        for r in transport.records:
+            assert r.asdict()['kind'] == aiozipkin.CONSUMER

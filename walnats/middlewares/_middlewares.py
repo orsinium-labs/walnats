@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from functools import lru_cache
 from typing import TYPE_CHECKING
 
@@ -9,6 +9,7 @@ from ._base import Middleware
 
 
 if TYPE_CHECKING:
+    import aiozipkin
     from datadog.dogstatsd import DogStatsd
     from prometheus_client import Counter, Histogram
 
@@ -66,6 +67,8 @@ class StatsdMiddleware(Middleware):
 
     We use Datadog statsd client because it is (compared to all alternatives)
     well maintained, type safe, and supports tags.
+
+    Requires `datadog` to be installed.
     """
     client: DogStatsd
 
@@ -114,6 +117,8 @@ def _get_prometheus_histogram(name: str, descr: str) -> Histogram:
 @dataclass(frozen=True)
 class PrometheusMiddleware(Middleware):
     """Store Prometheus metrics.
+
+    Requires `prometheus-client` to be installed.
     """
 
     def on_start(self, ctx: Context) -> None:
@@ -149,6 +154,8 @@ class SentryMiddleware(Middleware):
     Also, the "additional data" section will have:
         delivered_at: timestamp when Nats delivered the message to the consumer.
         stream_seq_id: sequence ID of the message in the Nats JetStream stream.
+
+    Requires `sentry-sdk` to be installed.
     """
 
     def __init__(self) -> None:
@@ -176,3 +183,31 @@ class SentryMiddleware(Middleware):
                 'delivered_at': str(ctx.metadata.timestamp),
             },
         )
+
+
+@dataclass(frozen=True)
+class ZipkinMiddleware(Middleware):
+    """Emit Zipkin span.
+
+    Requires `aiozipkin` to be installed.
+    """
+    tracer: aiozipkin.Tracer
+    sampled: bool | None = None
+    _spans: dict[int, aiozipkin.SpanAbc] = field(default_factory=dict)
+
+    def on_start(self, ctx: Context) -> None:
+        span = self.tracer.new_trace(sampled=self.sampled)
+        span.name(ctx.actor.name)
+        span.tag('event', ctx.actor.event.name)
+        span.kind('CONSUMER')
+        span.annotate
+        span.start()
+        self._spans[ctx.seq_number] = span
+
+    def on_failure(self, ctx: ErrorContext) -> None:
+        span = self._spans[ctx.seq_number]
+        span.finish(exception=ctx.exception)  # type: ignore[arg-type]
+
+    def on_success(self, ctx: OkContext) -> None:
+        span = self._spans[ctx.seq_number]
+        span.finish()
