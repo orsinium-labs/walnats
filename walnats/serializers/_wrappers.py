@@ -18,6 +18,11 @@ M = TypeVar('M')
 
 @dataclass(frozen=True)
 class GZipSerializer(Serializer[M], Generic[M]):
+    """Compress serialized data using gzip compression algorithm.
+
+    Args:
+        serializer: serializer whose output should be compressed.
+    """
     serializer: Serializer[M]
     level: int = 9
 
@@ -32,6 +37,14 @@ class GZipSerializer(Serializer[M], Generic[M]):
 
 @dataclass(frozen=True)
 class FernetSerializer(Serializer[M], Generic[M]):
+    """Sign and encrypt the message using Fernet algorithm.
+
+    Args:
+        serializer: serializer whose output should be encrypted.
+        key: secret key to use. See ``cryptography`` docs on how to generate the key.
+
+    Requires ``cryptography`` package to be installed.
+    """
     serializer: Serializer[M]
     key: str | bytes
 
@@ -51,6 +64,15 @@ class FernetSerializer(Serializer[M], Generic[M]):
 
 @dataclass(frozen=True)
 class HMACSerializer(Serializer[M], Generic[M]):
+    """Sign the message using HMAC algorithm.
+
+    The signed binary digest will be added at the beginning of the message.
+
+    Args:
+        serializer: serializer whose output should be signed.
+        key: the secret key to use.
+        hash_algorithm: hash algorithm name to use, anything supported by ``hashlib``.
+    """
     serializer: Serializer[M]
     key: bytes
     hash_algorithm: str = 'sha512'

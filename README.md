@@ -1,17 +1,37 @@
 # walnats
 
-Nats-based event-driven background jobs and microservices framework.
+[Nats](https://nats.io/)-based event-driven background jobs and microservices framework.
 
 Features:
 
 + Event-driven.
-+ 100% type safe.
++ 100% type-safe.
 + Immutable and easy to test.
 + Explicit APIs, no magic.
-+ Clear separation between publishers and subscribers.
++ Strict separation between publishers and subscribers.
 + Asyncio-based.
 + Nats-powered.
++ Exactly-once delivery.
++ Smart and configurable retries.
++ Many integrations.
 + Compatible. You can use walnats to emit events for non-walnats services or consume event emitted by non-walnats services. The tools is flexible enough to adapt for any format of the messages you use.
+
+## Compared to other tools
+
+Compared to other big Python frameworks for background jobs (like [celery](https://docs.celeryq.dev/en/stable/), [dramatiq](https://dramatiq.io/index.html), [rq](https://python-rq.org/), [huey](https://huey.readthedocs.io/en/latest/), and so on), the main difference from implementation perspective is that walnats is younger and so had opportunity to be designed around modern technologies right from the beginning. Namely, mypy-powered type safety, async/await powered concurrency, and nats-powered persistency and distribution.
+
+And when compared to **all** other Python frameworks for background jobs (including new async/await-based ones like [arq](https://arq-docs.helpmanual.io/), [pytask-io](https://github.com/joegasewicz/pytask-io), and [aiotasks](https://github.com/cr0hn/aiotasks)), the main difference is that Walnats is event-driven. While in all these frameworks the job scheduling is conceptually a function call over the network, in walnats publishers instead emit events to which any subscribers can subscribe at any point. This approach is called "[tell, don't ask](https://wiki.c2.com/?TellDontAsk)".
+
+For example, when your webshop sends a parcel to a client, instead of directly calling `send_email` and `send_sms` actors like you'd do with Celery, with Walnats publisher will emit a single `parcel-sent` event, and that event will be delivered by Walnats to all interested actors. It gives you a few nice benefits:
+
+1. Publisher makews only one network request.
+1. When you add a new actor, you don't need to modify the publisher. That's especially cool for microservice architecture when the publisher and the actor can be different services owned by different teams.
+1. It's easier to reason about. When you develop a microservice, you only need to know what events there are you can subscribe to and emit your own events without thinking too much how all other sefvices in the system work with these events.
+1. It's easier to observe. Walnats directly translates events into Nats subject and actors into Nats JetStream consumers. So, any Nats observability tool will give you great insights on what's going on in your system.
+
+If you have a big distributed system, Walnats is for you. If all you want is to send emails in background from your Django monolith or a little hobby project, you might find another framework a better fit.
+
+Lastly, compared to you just taking [nats.py](https://github.com/nats-io/nats.py) and writing your service from scratch, Walnats will handle much better failures, high load, and corner-cases. Walnats is "designed for failure". Distributed systems are hard, and you shouldn't embark on this journey alone.
 
 ## Walnats in 30 seconds
 

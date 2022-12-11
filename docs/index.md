@@ -16,6 +16,7 @@
     :caption: Additional topics
 
     middlewares
+    serializers
     glossary
     integrations
 ```
