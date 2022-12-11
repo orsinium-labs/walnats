@@ -15,6 +15,14 @@ if TYPE_CHECKING:
 
 @dataclass(frozen=True)
 class Context:
+    """The basic context, passed into ``Middleware.on_start`` callback.
+
+    Args:
+        actor: Actor object from which the callback is triggered.
+            The most common things you want from it are ``ctx.actor.name``
+            and ``ctx.actor.event.name``.
+        message: decoded message payload.
+    """
     actor: Actor
     message: object | None
     _msg: Msg
@@ -39,9 +47,23 @@ class Context:
 
 @dataclass(frozen=True)
 class ErrorContext(Context):
+    """Context passed into ``Middleware.on_failure`` callback.
+
+    Args:
+        exception: the raised exception.
+
+    ``message`` will be None if the error occured while trying to decode the message.
+    """
     exception: Exception | asyncio.CancelledError
 
 
 @dataclass(frozen=True)
 class OkContext(Context):
+    """Context passed into ``Middleware.on_success`` callback.
+
+    Args:
+        duration: how long it took for handler to finish the job.
+            It also includes time spent in ``await``, so be mindful of it
+            when using it to reason about handler performance.
+    """
     duration: float

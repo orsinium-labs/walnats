@@ -6,8 +6,10 @@ vars:
   VENVS: .venvs
   TEST_ENV: .venvs/test
   LINT_ENV: .venvs/lint
+  DOCS_ENV: .venvs/docs
   TEST_PYTHON: "{{.TEST_ENV}}/bin/python3"
   LINT_PYTHON: "{{.LINT_ENV}}/bin/python3"
+  DOCS_PYTHON: "{{.DOCS_ENV}}/bin/python3"
 
 env:
   FLIT_ROOT_INSTALL: "1"
@@ -28,6 +30,11 @@ tasks:
       - test -d {{.LINT_ENV}}
     cmds:
       - "{{.PYTHON}} -m venv {{.LINT_ENV}}"
+  venv:docs:
+    status:
+      - test -d {{.DOCS_ENV}}
+    cmds:
+      - "{{.PYTHON}} -m venv {{.DOCS_ENV}}"
   install:test:
     sources:
       - pyproject.toml
@@ -35,7 +42,12 @@ tasks:
       - install:flit
       - venv:test
     cmds:
-      - flit install --python {{.TEST_PYTHON}} --extras=test,integrations --symlink
+      - >
+        flit install
+        --python {{.TEST_PYTHON}}
+        --extras=test,integrations
+        --deps=production
+        --symlink
   install:lint:
     sources:
       - pyproject.toml
@@ -43,7 +55,25 @@ tasks:
       - install:flit
       - venv:lint
     cmds:
-      - flit install --python {{.LINT_PYTHON}} --extras=lint,integrations --symlink
+      - >
+        flit install
+        --python {{.LINT_PYTHON}}
+        --extras=lint,integrations
+        --deps=production
+        --symlink
+  install:docs:
+    sources:
+      - pyproject.toml
+    deps:
+      - install:flit
+      - venv:docs
+    cmds:
+      - >
+        flit install
+        --python {{.DOCS_PYTHON}}
+        --extras=docs
+        --deps=production
+        --symlink
 
   pytest:
     desc: "run Python tests"
@@ -81,6 +111,13 @@ tasks:
       - install:lint
     cmds:
       - "{{.LINT_PYTHON}} -m isort --check {{.CLI_ARGS}} ."
+  sphinx:
+    desc: "generate HTML documentation"
+    deps:
+      - install:docs
+    cmds:
+      - rm -rf docs/build
+      - "{{.DOCS_ENV}}/bin/sphinx-build -W docs docs/build {{.CLI_ARGS}}"
 
   # groups
   format:

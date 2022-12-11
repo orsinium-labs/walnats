@@ -33,6 +33,9 @@ class Middleware:
 
         If asynchronous, it can be executed when already outside of the `except` block,
         and so the traceback might not be available.
+
+        It is possible for on_failure to be triggered before on_start.
+        For example, if message decoding fails.
         """
         pass
 

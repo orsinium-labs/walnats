@@ -38,10 +38,14 @@ integrations = [
     "cryptography",
     "datadog",
     "marshmallow",
+    "msgpack",
     "prometheus-client",
     "pydantic",
     "sentry-sdk",
-    "msgpack",
+]
+docs = [
+    "sphinx",
+    "myst-parser",
 ]
 test = [
     "pytest",

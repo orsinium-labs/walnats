@@ -68,7 +68,7 @@ class StatsdMiddleware(Middleware):
     We use Datadog statsd client because it is (compared to all alternatives)
     well maintained, type safe, and supports tags.
 
-    Requires `datadog` to be installed.
+    Requires ``datadog`` to be installed.
     """
     client: DogStatsd
 
@@ -118,7 +118,7 @@ def _get_prometheus_histogram(name: str, descr: str) -> Histogram:
 class PrometheusMiddleware(Middleware):
     """Store Prometheus metrics.
 
-    Requires `prometheus-client` to be installed.
+    Requires ``prometheus-client`` to be installed.
     """
 
     def on_start(self, ctx: Context) -> None:
@@ -155,7 +155,7 @@ class SentryMiddleware(Middleware):
         delivered_at: timestamp when Nats delivered the message to the consumer.
         stream_seq_id: sequence ID of the message in the Nats JetStream stream.
 
-    Requires `sentry-sdk` to be installed.
+    Requires ``sentry-sdk`` to be installed.
     """
 
     def __init__(self) -> None:
@@ -189,7 +189,7 @@ class SentryMiddleware(Middleware):
 class ZipkinMiddleware(Middleware):
     """Emit Zipkin span.
 
-    Requires `aiozipkin` to be installed.
+    Requires ``aiozipkin`` to be installed.
     """
     tracer: aiozipkin.Tracer
     sampled: bool | None = None
@@ -205,8 +205,9 @@ class ZipkinMiddleware(Middleware):
         self._spans[ctx.seq_number] = span
 
     def on_failure(self, ctx: ErrorContext) -> None:
-        span = self._spans[ctx.seq_number]
-        span.finish(exception=ctx.exception)  # type: ignore[arg-type]
+        span = self._spans.get(ctx.seq_number)
+        if span is not None:
+            span.finish(exception=ctx.exception)  # type: ignore[arg-type]
 
     def on_success(self, ctx: OkContext) -> None:
         span = self._spans[ctx.seq_number]
