@@ -20,6 +20,8 @@ T = TypeVar('T')
 
 
 def get_serializer(schema: type[T]) -> Serializer[T]:
+    """Pick a serializer that can serialize message of the given type.
+    """
     for serializer_class in SERIALIZERS:
         serializer = serializer_class.new(schema)
         if serializer is not None:

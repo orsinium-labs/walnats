@@ -18,9 +18,12 @@ MSG_ID = nats.js.api.Header.MSG_ID.value
 
 @dataclass(frozen=True)
 class ConnectedEvents:
-    """A registry of Event instances. Like Events but connected to Nats server.
+    """A registry of :class:`walnats.Event` instances.
 
-    Use it to emit events. Don't instanciate directly, use Events.connect instead.
+    Like :class:`walnats.Events` but connected to Nats server.
+
+    Use it to emit events. Don't instanciate directly,
+    use :meth:`walnats.Events.connect` instead.
     """
     _nc: nats.NATS
     _js: nats.js.JetStreamContext
@@ -40,7 +43,7 @@ class ConnectedEvents:
         await asyncio.gather(*tasks)
 
     async def emit(self, event: Event[T], message: T, uid: str | None = None) -> None:
-        """Send an event into Nats. The event must be registered first.
+        """Send an :class:`walnats.Event` into Nats. The event must be registered first.
 
         Args:
             event: registered event to which the message belongs.

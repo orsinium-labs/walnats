@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 
 @dataclass(frozen=True)
 class Context:
-    """The basic context, passed into ``Middleware.on_start`` callback.
+    """Base context, passed into :meth:`walnats.middlewares.Middleware.on_start` callback.
 
     Args:
         actor: Actor object from which the callback is triggered.
@@ -47,19 +47,19 @@ class Context:
 
 @dataclass(frozen=True)
 class ErrorContext(Context):
-    """Context passed into ``Middleware.on_failure`` callback.
+    """Context passed into :class:`walnats.middlewares.Middleware.on_failure` callback.
 
     Args:
         exception: the raised exception.
 
-    ``message`` will be None if the error occured while trying to decode the message.
+    The ``message`` will be None if the error occured while trying to decode the message.
     """
     exception: Exception | asyncio.CancelledError
 
 
 @dataclass(frozen=True)
 class OkContext(Context):
-    """Context passed into ``Middleware.on_success`` callback.
+    """Context passed into :meth:`walnats.middlewares.Middleware.on_success` callback.
 
     Args:
         duration: how long it took for handler to finish the job.

@@ -41,7 +41,9 @@ class Limits:
 
 @dataclasses.dataclass
 class BaseEvent(Generic[T, R]):
-    """Internal-only class to provide shared behavior for Event and EventWithResponse.
+    """
+    Internal-only class to provide shared behavior
+    for :class:`walnats.Event` and :class:`walnats.EventWithResponse`.
     """
     name: str
     schema: type[T]

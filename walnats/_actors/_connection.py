@@ -15,6 +15,13 @@ from ._actor import Actor
 
 @dataclass(frozen=True)
 class ConnectedActors:
+    """A registry of :class:`walnats.Actor` instances.
+
+    Like :class:`walnats.Actors` but connected to Nats server.
+
+    Use it to listen to events. Don't instanciate directly,
+    use :meth:`walnats.Actors.connect` instead.
+    """
     _js: nats.js.JetStreamContext
     _actors: tuple[Actor, ...]
 
@@ -70,6 +77,8 @@ class ConnectedActors:
         assert poll_delay >= 0
         assert batch >= 1
         assert max_jobs >= 1
+        assert max_processes is None or max_processes >= 1
+        assert max_threads is None or max_threads >= 1
 
         poll_sem = asyncio.Semaphore(max_polls or len(self._actors))
         job_sem = asyncio.Semaphore(max_jobs)

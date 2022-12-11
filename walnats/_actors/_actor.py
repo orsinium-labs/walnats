@@ -24,7 +24,7 @@ logger = getLogger('walnats.actor')
 
 @dataclass(frozen=True)
 class Actor(Generic[T, R]):
-    """A subscriber group that listens to a specific event.
+    """A subscriber group that listens to a specific :class:`walnats.Event`.
 
     Args:
         name: the actor name. It is used as durable consumer name in Nats,

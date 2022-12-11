@@ -16,9 +16,9 @@ DEFAULT_SERVER = 'nats://localhost:4222'
 
 
 class Events:
-    """Registry of Event instances.
+    """Registry of :class:`walnats.Event` instances.
     """
-    __slots__ = ['_events']
+    __slots__ = ('_events',)
     _events: tuple[BaseEvent, ...]
 
     def __init__(self, *events: BaseEvent) -> None:
@@ -26,7 +26,7 @@ class Events:
         self._events = events
 
     def get(self, name: str) -> BaseEvent | None:
-        """Get an Event from the list of registered events by name.
+        """Get an :class:`walnats.Event` from the list of registered events by name.
         """
         for event in self._events:
             if event.name == name:

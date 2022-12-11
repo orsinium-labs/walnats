@@ -16,7 +16,7 @@ DEFAULT_SERVER = 'nats://localhost:4222'
 
 
 class Actors:
-    """Registry of Actor instances.
+    """Registry of :class:`walnats.Actor` instances.
     """
     __slots__ = ['_actors']
     _actors: tuple[Actor, ...]
@@ -26,7 +26,7 @@ class Actors:
         self._actors = actors
 
     def get(self, name: str) -> Actor | None:
-        """Get an Actor from the list of registered actors by name.
+        """Get an :class:`walnats.Actor` from the list of registered actors by name.
         """
         for actor in self._actors:
             if actor.name == name:
