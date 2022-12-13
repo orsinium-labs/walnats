@@ -280,3 +280,15 @@ async def test_ZipkinMiddleware() -> None:
 
         for r in transport.records:
             assert r.asdict()['kind'] == aiozipkin.CONSUMER
+
+
+async def test_CurrentContextMiddleware() -> None:
+    mw = walnats.middlewares.CurrentContextMiddleware()
+    received = []
+
+    async def handler(msg: str) -> None:
+        assert msg == mw.context.message
+        received.append(msg)
+
+    await run_actor(handler, [f'{i}' for i in range(40)], mw)
+    assert len(received) == 40

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+from contextvars import ContextVar
 from dataclasses import dataclass, field
 from functools import lru_cache
 from typing import TYPE_CHECKING
@@ -25,6 +26,30 @@ try:
     import sentry_sdk
 except ImportError:
     sentry_sdk = None  # type: ignore[assignment]
+
+
+@dataclass(frozen=True)
+class CurrentContextMiddleware(Middleware):
+    """Middleware that records the current context on start.
+
+    This is a small trick to make the context available from handler or decorators
+    when you need additional information about the Nats message received.
+    We don't pass context in handlers explicitly by default because most of the handlers
+    should care only about the actual message payload,
+    independent of how it was delivered.
+    """
+    _context: ContextVar[Context] = field(
+        default_factory=lambda: ContextVar('context'),
+    )
+
+    @property
+    def context(self) -> Context:
+        """The context for the currently running job.
+        """
+        return self._context.get()
+
+    def on_start(self, ctx: Context) -> None:
+        self._context.set(ctx)
 
 
 @dataclass(frozen=True)
@@ -68,7 +93,7 @@ class StatsdMiddleware(Middleware):
     We use Datadog statsd client because it is (compared to all alternatives)
     well maintained, type safe, and supports tags.
 
-    Requires ``datadog`` to be installed.
+    Requires `datadog <https://github.com/DataDog/datadogpy>`_ package to be installed.
     """
     client: DogStatsd
 
@@ -118,7 +143,8 @@ def _get_prometheus_histogram(name: str, descr: str) -> Histogram:
 class PrometheusMiddleware(Middleware):
     """Store Prometheus metrics.
 
-    Requires ``prometheus-client`` to be installed.
+    Requires `prometheus-client <https://github.com/prometheus/client_python>`_
+    package to be installed.
     """
 
     def on_start(self, ctx: Context) -> None:
@@ -148,15 +174,19 @@ class SentryMiddleware(Middleware):
     """Report actor failures into Sentry using the official Sentry SDK.
 
     The failure report will include tags:
-        actor: actor name.
-        event: event name.
+
+    * actor: actor name.
+    * event: event name.
 
     Also, the "additional data" section will have:
-        delivered_at: timestamp when Nats delivered the message to the consumer.
-        stream_seq_id: sequence ID of the message in the Nats JetStream stream.
 
-    Requires ``sentry-sdk`` to be installed.
+    * delivered_at: timestamp when Nats delivered the message to the consumer.
+    * stream_seq_id: sequence ID of the message in the Nats JetStream stream.
+
+    Requires `sentry-sdk <https://github.com/getsentry/sentry-python>`_
+    package to be installed.
     """
+    __slots__ = ()
 
     def __init__(self) -> None:
         from sentry_sdk.integrations.logging import ignore_logger
@@ -189,7 +219,7 @@ class SentryMiddleware(Middleware):
 class ZipkinMiddleware(Middleware):
     """Emit Zipkin span.
 
-    Requires ``aiozipkin`` to be installed.
+    Requires `aiozipkin <https://github.com/aio-libs/aiozipkin>`_ package to be installed.
     """
     tracer: aiozipkin.Tracer
     sampled: bool | None = None
