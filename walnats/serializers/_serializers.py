@@ -75,6 +75,11 @@ class DataclassSerializer(Serializer[object]):
 @dataclasses.dataclass(frozen=True)
 class MarshmallowSerializer(Serializer['MarshmallowSchema']):
     """Serialize marshmallow schemas as JSON.
+
+    If you use marshmallow schemas for events, you'll get false-positives from mypy
+    on actors because the data you serialize with a marshmallow schema has a dict type,
+    not the schema type. If you care about type safety, use dtaclasses or pydantic
+    for models instead. If you can't, throw in ``# type: ignore`` where is applicable.
     """
     schema: type[MarshmallowSchema]
 

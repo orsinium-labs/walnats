@@ -3,6 +3,7 @@ from __future__ import annotations
 import datetime
 from dataclasses import dataclass
 
+import marshmallow
 import pydantic
 import pytest
 from cryptography.fernet import Fernet, InvalidToken
@@ -36,12 +37,23 @@ TEST_CASES = [
 
 @pytest.mark.parametrize('message', TEST_CASES)
 def test_roundtrip(message: object) -> None:
-    assert message == message
+    assert message == message  # test if comparable
     schema = type(message)
     ser = walnats.serializers.get_serializer(schema)
     enc = ser.encode(message)
     dec = ser.decode(enc)
     assert message == dec
+
+
+def test_marshmallow_roundtrip():
+    class Marshmallow(marshmallow.Schema):
+        value = marshmallow.fields.Str()
+
+    ser = walnats.serializers.get_serializer(Marshmallow)
+    message = {'value': 'hello'}
+    enc = ser.encode(message)  # type: ignore[arg-type]
+    dec = ser.decode(enc)
+    assert message == dec  # type: ignore[comparison-overlap]
 
 
 @pytest.mark.parametrize('message', TEST_CASES)

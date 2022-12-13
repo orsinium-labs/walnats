@@ -251,7 +251,8 @@ class Actor(Generic[T, R]):
         except (Exception, asyncio.CancelledError) as exc:
             pulse_task.cancel()
             logger.exception(f'Unhandled {type(exc).__name__} in "{self.name}" actor')
-            tasks.start(msg.nak(delay=self._get_nak_delay(msg)), name=f'{prefix}nak')
+            nak_coro = msg.nak(delay=self._get_nak_delay(msg.metadata.num_delivered))
+            tasks.start(nak_coro, name=f'{prefix}nak')
 
             # trigger on_failure hooks
             if self.middlewares:
@@ -287,13 +288,13 @@ class Actor(Generic[T, R]):
             await asyncio.sleep(self.ack_wait / 2)
             await msg.in_progress()
 
-    def _get_nak_delay(self, msg: Msg) -> float:
+    def _get_nak_delay(self, attempt: int | None) -> float:
         delays = self.retry_delay
         if not delays:
             return 0
-        attempt = msg.metadata.num_delivered
         if attempt is None:
             return delays[0]
+        assert attempt >= 0
         if attempt >= len(delays):
             return delays[-1]
         return delays[attempt]

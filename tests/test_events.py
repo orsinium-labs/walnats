@@ -22,6 +22,14 @@ def test_events_get():
     assert events.get('something') is None
 
 
+def test_events_iter():
+    e1 = walnats.Event(get_random_name(), str)
+    e2 = walnats.Event(get_random_name(), str)
+    e3 = walnats.Event(get_random_name(), str)
+    events = walnats.Events(e1, e2, e3)
+    assert list(events) == [e1, e2, e3]
+
+
 async def test_events_monitor():
     event = walnats.Event(get_random_name(), str)
     events = walnats.Events(event)

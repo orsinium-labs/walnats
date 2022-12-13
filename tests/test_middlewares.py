@@ -208,17 +208,25 @@ async def test_TextLogMiddleware__on_failure(caplog: LogCaptureFixture) -> None:
     assert re.match(r'event .+: actor .+ failed', records[2].message)
 
 
-async def test_ErrorThresholdMiddleware() -> None:
+async def test_ErrorThresholdMiddleware__single_failure() -> None:
     mw = MockMiddleware()
     await run_actor(explode, 'hi', walnats.middlewares.ErrorThresholdMiddleware(mw))
     assert mw.hist == ['on_start']
 
+
+async def test_ErrorThresholdMiddleware__multiple_failures() -> None:
     mw = MockMiddleware()
     await run_actor(
         explode, ['hi'] * 40,
         walnats.middlewares.ErrorThresholdMiddleware(mw),
     )
     assert Counter(mw.hist) == Counter(dict(on_start=40, on_failure=19))
+
+
+async def test_ErrorThresholdMiddleware__on_success() -> None:
+    mw = MockMiddleware()
+    await run_actor(noop, 'hi', walnats.middlewares.ErrorThresholdMiddleware(mw))
+    assert mw.hist == ['on_start', 'on_success']
 
 
 async def test_FrequencyMiddleware() -> None:

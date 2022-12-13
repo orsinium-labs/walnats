@@ -43,7 +43,8 @@ class ErrorThresholdMiddleware(Middleware):
 
     def on_success(self, ctx: OkContext) -> Coroutine[None, None, None] | None:
         self._overall = 0
-        del self._per_actor[f'{ctx.actor.event.name}.{ctx.actor.name}']
+        actor_name = f'{ctx.actor.event.name}.{ctx.actor.name}'
+        self._per_actor.pop(actor_name, None)
         return self.middleware.on_success(ctx)
 
     def on_failure(self, ctx: ErrorContext) -> Coroutine[None, None, None] | None:

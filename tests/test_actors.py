@@ -4,6 +4,8 @@ import asyncio
 import time
 from contextlib import contextmanager
 
+import pytest
+
 import walnats
 
 from .helpers import get_random_name
@@ -122,3 +124,31 @@ def test_actors_get():
     assert a2
     assert a2.name == 'a2'
     assert actors.get('something') is None
+
+
+def test_actors_iter():
+    async def noop(_):
+        pass
+
+    e = walnats.Event(get_random_name(), str)
+    a1 = walnats.Actor('a1', e, noop)
+    a2 = walnats.Actor('a3', e, noop)
+    a3 = walnats.Actor('a2', e, noop)
+    actors = walnats.Actors(a1, a2, a3)
+    assert list(actors) == [a1, a2, a3]
+
+
+@pytest.mark.parametrize('delays, attempt, expected', [
+    ([], 0, 0),
+    ([], 1, 0),
+    ([4, 5, 6], None, 4),
+    ([4, 5, 6], 0, 4),
+    ([4, 5, 6], 1, 5),
+    ([4, 5, 6], 2, 6),
+    ([4, 5, 6], 3, 6),
+    ([4, 5, 6], 13, 6),
+])
+def test_get_nak_delay(delays, attempt, expected):
+    e = walnats.Event('', str)
+    a = walnats.Actor('', e, lambda _: None, retry_delay=delays)
+    assert a._get_nak_delay(attempt) == expected
