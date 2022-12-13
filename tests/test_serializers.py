@@ -10,6 +10,8 @@ from cryptography.fernet import Fernet, InvalidToken
 
 import walnats
 
+from .protobuf_pb2 import Protobuf  # type: ignore [attr-defined]
+
 
 class Pydantic(pydantic.BaseModel):
     value: str
@@ -23,6 +25,7 @@ class Dataclass:
 TEST_CASES = [
     Pydantic(value='hi'),
     Dataclass(value='hi'),
+    Protobuf(value='hello'),
     'hello',
     b'hello',
     123,
