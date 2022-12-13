@@ -1,7 +1,7 @@
 from ._base import Middleware
 from ._middlewares import (
     CurrentContextMiddleware, ExtraLogMiddleware, PrometheusMiddleware,
-    SentryMiddleware, StatsdMiddleware, ZipkinMiddleware, TextLogMiddleware,
+    SentryMiddleware, StatsdMiddleware, TextLogMiddleware, ZipkinMiddleware,
 )
 from ._wrappers import ErrorThresholdMiddleware, FrequencyMiddleware
 

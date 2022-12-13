@@ -3,8 +3,8 @@ from __future__ import annotations
 import asyncio
 import logging
 import os
-from collections import Counter
 import re
+from collections import Counter
 from typing import TYPE_CHECKING, Callable
 
 import aiozipkin
@@ -49,6 +49,7 @@ async def run_actor(
     handler: Callable,
     messages: str | list[str],
     *middlewares: walnats.middlewares.Middleware,
+    trace_id: str | None = None,
     **kwargs,
 ) -> None:
     event = walnats.Event(get_random_name(), str)
@@ -60,7 +61,9 @@ async def run_actor(
     async with events_reg.connect() as pub_conn, actors_reg.connect() as sub_conn:
         await pub_conn.register()
         await sub_conn.register()
-        await asyncio.gather(*[pub_conn.emit(event, m) for m in messages])
+        await asyncio.gather(
+            *[pub_conn.emit(event, m, trace_id=trace_id) for m in messages],
+        )
         if len(messages) > 1:
             await asyncio.sleep(.01)
         await sub_conn.listen(burst=True, batch=len(messages), **kwargs)
@@ -291,18 +294,31 @@ async def test_ZipkinMiddleware() -> None:
     transport = StubTransport()
     async with aiozipkin.create_custom(endpoint, transport) as tracer:
 
-        await run_actor(explode, 'hi', walnats.middlewares.ZipkinMiddleware(tracer))
+        # emit a trace for normal operation
+        await run_actor(noop, 'hi', walnats.middlewares.ZipkinMiddleware(tracer))
         assert len(transport.records) == 1
-        r = transport.records[0]
+        r = transport.records[-1]
+        tags = r.asdict()['tags']
+        assert set(tags) == {'event'}
+
+        # include exception on failure
+        await run_actor(explode, 'hi', walnats.middlewares.ZipkinMiddleware(tracer))
+        assert len(transport.records) == 2
+        r = transport.records[-1]
         tags = r.asdict()['tags']
         assert set(tags) == {'event', 'error'}
         assert tags['error'] == 'division by zero'
 
-        await run_actor(noop, 'hi', walnats.middlewares.ZipkinMiddleware(tracer))
-        assert len(transport.records) == 2
+        # use provided trace_id if available
+        await run_actor(
+            noop, 'hi', walnats.middlewares.ZipkinMiddleware(tracer),
+            trace_id='123',
+        )
+        assert len(transport.records) == 3
         r = transport.records[-1]
         tags = r.asdict()['tags']
         assert set(tags) == {'event'}
+        assert r.asdict()['traceId'] == '123'
 
         for r in transport.records:
             assert r.asdict()['kind'] == aiozipkin.CONSUMER

@@ -4,6 +4,8 @@ from dataclasses import dataclass
 from functools import cached_property
 from typing import TYPE_CHECKING
 
+from ._constants import HEADER_TRACE
+
 
 if TYPE_CHECKING:
     import asyncio
@@ -42,7 +44,17 @@ class Context:
     def is_first_attempt(self) -> bool:
         """Check if this is the first attempt to handle the message.
         """
-        return self.metadata.num_delivered == 0
+        return bool(self.metadata.num_delivered)
+
+    @cached_property
+    def trace_id(self) -> str | None:
+        """The ``trace_id`` provided when emitting the message.
+
+        This value is typically used for distributed tracing.
+        """
+        if self._msg.headers is None:
+            return None
+        return self._msg.headers.get(HEADER_TRACE)
 
 
 @dataclass(frozen=True)

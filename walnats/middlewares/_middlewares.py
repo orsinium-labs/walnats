@@ -106,7 +106,7 @@ class TextLogMiddleware(Middleware):
         a = ctx.actor
         attempt = ctx.metadata.num_delivered
         msg = f'event {a.event.name}: received by {a.name}'
-        if attempt and attempt > 1:
+        if attempt:
             msg += ' (attempt #{attempt})'
         self.logger.debug(msg)
 
@@ -259,7 +259,10 @@ class ZipkinMiddleware(Middleware):
     _spans: dict[int, aiozipkin.SpanAbc] = field(default_factory=dict)
 
     def on_start(self, ctx: Context) -> None:
-        span = self.tracer.new_trace(sampled=self.sampled)
+        trace_ctx = self.tracer._next_context(sampled=self.sampled)
+        if ctx.trace_id is not None:
+            trace_ctx = trace_ctx._replace(trace_id=ctx.trace_id)
+        span = self.tracer.to_span(trace_ctx)
         span.name(ctx.actor.name)
         span.tag('event', ctx.actor.event.name)
         span.kind('CONSUMER')

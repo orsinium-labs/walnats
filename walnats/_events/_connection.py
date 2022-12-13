@@ -8,12 +8,12 @@ from typing import Iterator, TypeVar
 import nats
 import nats.js
 
+from .._constants import HEADER_ID, HEADER_REPLY, HEADER_TRACE
 from ._event import BaseEvent, Event, EventWithResponse
 
 
 T = TypeVar('T')
 R = TypeVar('R')
-MSG_ID = nats.js.api.Header.MSG_ID.value
 
 
 @dataclass(frozen=True)
@@ -42,7 +42,13 @@ class ConnectedEvents:
             tasks.append(task)
         await asyncio.gather(*tasks)
 
-    async def emit(self, event: Event[T], message: T, uid: str | None = None) -> None:
+    async def emit(
+        self,
+        event: Event[T],
+        message: T,
+        uid: str | None = None,
+        trace_id: str | None = None,
+    ) -> None:
         """Send an :class:`walnats.Event` into Nats. The event must be registered first.
 
         Args:
@@ -52,28 +58,40 @@ class ConnectedEvents:
                 that the same message is not delivered twice.
                 Duplicate messagess with the same ID will be ignored.
                 Deduplication window in Nats JetStream is 2 minutes by default.
+            trace_id: the ID of the request to use for distributed tracing.
+                It doesn't have any effect on actors but can be used by tracing
+                middlewares, such as :class:`walnats.middlewares.ZipkinMiddleware`.
         """
         payload = event.encode(message)
-        headers = {MSG_ID: uid} if uid is not None else None
-        await self._nc.publish(event.subject_name, payload, headers=headers)
+        headers = {}
+        if uid is not None:
+            headers[HEADER_ID] = uid
+        if trace_id is not None:
+            headers[HEADER_TRACE] = trace_id
+        await self._nc.publish(event.subject_name, payload, headers=headers or None)
 
     async def request(
         self,
         event: EventWithResponse[T, R],
         message: T,
+        uid: str | None = None,
+        trace_id: str | None = None,
         timeout: float = 3,
     ) -> R:
         payload = event.encode(message)
         inbox = self._nc.new_inbox()
         sub = await self._nc.subscribe(inbox)
+
+        # We can't use Nats built-in request/reply mechanism
+        # because JetStream uses the Reply header for ack/nak.
+        headers = {HEADER_REPLY: inbox}
+        if uid is not None:
+            headers[HEADER_ID] = uid
+        if trace_id is not None:
+            headers[HEADER_TRACE] = trace_id
+
         try:
-            await self._nc.publish(
-                event.subject_name,
-                payload,
-                # We can't use Nats built-in request/reply mechanism
-                # because JetStream discards the Reply header for messages.
-                headers={'Walnats-Reply': inbox},
-            )
+            await self._nc.publish(event.subject_name, payload, headers=headers)
             msg = await sub.next_msg(timeout=timeout)
         finally:
             await sub.unsubscribe()

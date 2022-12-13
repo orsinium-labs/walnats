@@ -11,6 +11,7 @@ from typing import Awaitable, Callable, Generic, Literal, Sequence, TypeVar
 import nats.js
 from nats.aio.msg import Msg
 
+from .._constants import HEADER_REPLY
 from .._context import Context, ErrorContext, OkContext
 from .._events._event import BaseEvent, EventWithResponse
 from ..middlewares import Middleware
@@ -265,7 +266,7 @@ class Actor(Generic[T, R]):
 
             if isinstance(self.event, EventWithResponse):
                 payload = self.event.encode_response(result)
-                reply = msg.headers.get('Walnats-Reply') if msg.headers else None
+                reply = msg.headers.get(HEADER_REPLY) if msg.headers else None
                 if reply is not None:
                     coro = msg._client.publish(reply, payload, headers=msg.headers)
                     tasks.start(coro, name=f'{prefix}respond')
