@@ -4,6 +4,7 @@ import asyncio
 import logging
 import os
 from collections import Counter
+import re
 from typing import TYPE_CHECKING, Callable
 
 import aiozipkin
@@ -177,6 +178,31 @@ async def test_ExtraLogMiddleware__on_failure(caplog: LogCaptureFixture) -> None
     assert records[0].message == 'event received'
     assert records[1].message.startswith('Unhandled ZeroDivisionError in')
     assert records[2].message == 'actor failed'
+
+
+async def test_TextLogMiddleware(caplog: LogCaptureFixture) -> None:
+    caplog.set_level(logging.DEBUG)
+    await run_actor(noop, 'hi', walnats.middlewares.TextLogMiddleware())
+    records = []
+    for record in caplog.records:
+        if record.name.startswith('walnats'):
+            records.append(record)
+    assert len(records) == 2
+    assert re.match(r'event .+: received by .+', records[0].message)
+    assert re.match(r'event .+: processed by .+', records[1].message)
+
+
+async def test_TextLogMiddleware__on_failure(caplog: LogCaptureFixture) -> None:
+    caplog.set_level(logging.DEBUG)
+    await run_actor(explode, 'hi', walnats.middlewares.TextLogMiddleware())
+    records = []
+    for record in caplog.records:
+        if record.name.startswith('walnats'):
+            records.append(record)
+    assert len(records) == 3
+    assert re.match(r'event .+: received by .+', records[0].message)
+    assert records[1].message.startswith('Unhandled ZeroDivisionError in')
+    assert re.match(r'event .+: actor .+ failed', records[2].message)
 
 
 async def test_ErrorThresholdMiddleware() -> None:

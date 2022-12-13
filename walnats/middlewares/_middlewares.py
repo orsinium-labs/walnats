@@ -87,6 +87,39 @@ class ExtraLogMiddleware(Middleware):
 
 
 @dataclass(frozen=True)
+class TextLogMiddleware(Middleware):
+    """Write plain text logs using ``logging``.
+
+    The middleware might be useful for debugging. For the prod, consider using
+    :class:`walnats.middlewares.ExtraLogMiddleware`.
+
+    By default, DEBUG-level logs are not shown. You need to enable them explicitly::
+
+        import logging
+        logger = logging.getLogger()
+        logger.setLevel(logging.DEBUG)
+
+    """
+    logger: logging.Logger | logging.LoggerAdapter = logging.getLogger(__package__)
+
+    def on_start(self, ctx: Context) -> None:
+        a = ctx.actor
+        attempt = ctx.metadata.num_delivered
+        msg = f'event {a.event.name}: received by {a.name}'
+        if attempt and attempt > 1:
+            msg += ' (attempt #{attempt})'
+        self.logger.debug(msg)
+
+    def on_failure(self, ctx: ErrorContext) -> None:
+        a = ctx.actor
+        self.logger.exception(f'event {a.event.name}: actor {a.name} failed')
+
+    def on_success(self, ctx: OkContext) -> None:
+        a = ctx.actor
+        self.logger.debug(f'event {a.event.name}: processed by {a.name}')
+
+
+@dataclass(frozen=True)
 class StatsdMiddleware(Middleware):
     """Emit statsd metrics using Datadog statsd client.
 
