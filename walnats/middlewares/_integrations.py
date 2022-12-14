@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import asyncio
+from contextvars import ContextVar
 from dataclasses import dataclass, field
 from functools import lru_cache
 from typing import TYPE_CHECKING
@@ -9,6 +11,7 @@ from ._base import Middleware
 
 if TYPE_CHECKING:
     import aiozipkin
+    import opentelemetry.trace
     from datadog.dogstatsd import DogStatsd
     from prometheus_client import Counter, Histogram
 
@@ -163,7 +166,18 @@ class ZipkinMiddleware(Middleware):
     """
     tracer: aiozipkin.Tracer
     sampled: bool | None = None
-    _spans: dict[int, aiozipkin.SpanAbc] = field(default_factory=dict)
+    _span: ContextVar[aiozipkin.SpanAbc | None] = field(
+        default_factory=lambda: ContextVar('span', default=None),
+    )
+
+    @property
+    def span(self) -> aiozipkin.SpanAbc | None:
+        """The current span. Use it from handler to create child spans.
+
+        May be ``None`` if you forgot to add the middleware for the actor,
+        and so ``on_start`` hasn't been called.
+        """
+        return self._span.get()
 
     def on_start(self, ctx: Context) -> None:
         trace_ctx = self.tracer._next_context(sampled=self.sampled)
@@ -173,15 +187,61 @@ class ZipkinMiddleware(Middleware):
         span.name(ctx.actor.name)
         span.tag('event', ctx.actor.event.name)
         span.kind('CONSUMER')
-        span.annotate
         span.start()
-        self._spans[ctx.seq_number] = span
+        self._span.set(span)
 
     def on_failure(self, ctx: ErrorContext) -> None:
-        span = self._spans.get(ctx.seq_number)
+        span = self._span.get()
         if span is not None:
             span.finish(exception=ctx.exception)  # type: ignore[arg-type]
 
     def on_success(self, ctx: OkContext) -> None:
-        span = self._spans[ctx.seq_number]
+        span = self._span.get()
+        assert span is not None
         span.finish()
+
+
+@dataclass(frozen=True)
+class OpenTelemetryTraceMiddleware(Middleware):
+    tracer: opentelemetry.trace.Tracer
+    _span: ContextVar[opentelemetry.trace.Span | None] = field(
+        default_factory=lambda: ContextVar('span', default=None),
+    )
+
+    @property
+    def span(self) -> opentelemetry.trace.Span | None:
+        """The current span. Use it from handler to create child spans.
+
+        May be ``None`` if you forgot to add the middleware for the actor,
+        and so ``on_start`` hasn't been called.
+        """
+        return self._span.get()
+
+    def on_start(self, ctx: Context) -> None:
+        import opentelemetry.trace
+        from opentelemetry.trace.propagation import tracecontext
+
+        trace_context: opentelemetry.trace.Context | None = None
+        if ctx.trace_id is not None:
+            trace_context = tracecontext.TraceContextTextMapPropagator().extract(
+                carrier={'traceparent': ctx.trace_id},
+            )
+        span = self.tracer.start_span(
+            name=ctx.actor.name,
+            kind=opentelemetry.trace.SpanKind.CONSUMER,
+            attributes={'event': ctx.actor.event.name},
+            context=trace_context,
+        )
+        self._span.set(span)
+
+    def on_failure(self, ctx: ErrorContext) -> None:
+        span = self._span.get()
+        if span is not None:
+            if not isinstance(ctx.exception, asyncio.CancelledError):
+                span.record_exception(ctx.exception)
+            span.end()
+
+    def on_success(self, ctx: OkContext) -> None:
+        span = self._span.get()
+        assert span is not None
+        span.end()

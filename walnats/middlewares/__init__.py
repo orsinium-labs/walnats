@@ -1,6 +1,7 @@
 from ._base import Middleware
 from ._integrations import (
-    PrometheusMiddleware, SentryMiddleware, StatsdMiddleware, ZipkinMiddleware,
+    OpenTelemetryTraceMiddleware, PrometheusMiddleware, SentryMiddleware,
+    StatsdMiddleware, ZipkinMiddleware,
 )
 from ._middlewares import (
     CurrentContextMiddleware, ExtraLogMiddleware, TextLogMiddleware,
@@ -21,6 +22,7 @@ __all__ = [
     'FrequencyMiddleware',
 
     # integrations
+    'OpenTelemetryTraceMiddleware',
     'PrometheusMiddleware',
     'SentryMiddleware',
     'StatsdMiddleware',

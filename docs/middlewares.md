@@ -15,6 +15,7 @@
 Integrations with third-party services to provide observability for running actors.
 
 ```{eval-rst}
+.. autoclass:: walnats.middlewares.OpenTelemetryTraceMiddleware
 .. autoclass:: walnats.middlewares.PrometheusMiddleware
 .. autoclass:: walnats.middlewares.SentryMiddleware
 .. autoclass:: walnats.middlewares.StatsdMiddleware

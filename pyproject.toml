@@ -39,6 +39,7 @@ integrations = [
     "datadog",
     "marshmallow",
     "msgpack",
+    "opentelemetry-distro",
     "prometheus-client",
     "protobuf",
     "pydantic",

@@ -286,12 +286,12 @@ async def test_PrometheusMiddleware() -> None:
     )
 
 
-async def test_SentryMiddleware() -> None:
+async def test_SentryMiddleware__smoke() -> None:
     await run_actor(explode, 'hi', walnats.middlewares.SentryMiddleware())
 
 
 @pytest.mark.skipif(not SENTRY_DSN, reason='SENTRY_DSN env var is not provided')
-async def test_SentryMiddleware_real_sentry() -> None:
+async def test_SentryMiddleware__real_sentry() -> None:
     with sentry_sdk.init(SENTRY_DSN):
         await run_actor(explode, 'hi', walnats.middlewares.SentryMiddleware())
         sentry_sdk.flush()
@@ -342,3 +342,19 @@ async def test_CurrentContextMiddleware() -> None:
 
     await run_actor(handler, [f'{i}' for i in range(40)], mw)
     assert len(received) == 40
+
+
+async def test_OpenTelemetryTraceMiddleware__smoke() -> None:
+    import opentelemetry.trace
+
+    tracer = opentelemetry.trace.get_tracer('tests')
+    await run_actor(
+        explode, 'hi',
+        walnats.middlewares.OpenTelemetryTraceMiddleware(tracer),
+    )
+
+    tracer = opentelemetry.trace.get_tracer('tests')
+    await run_actor(
+        noop, 'hi',
+        walnats.middlewares.OpenTelemetryTraceMiddleware(tracer),
+    )
