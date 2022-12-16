@@ -108,6 +108,35 @@ async def test_run_in_thread_pool() -> None:
         )
 
 
+async def test_delay() -> None:
+    class MW(walnats.middlewares.Middleware):
+        def on_start(self, ctx) -> None:
+            assert ctx.attempts == 1
+
+    received: list[str] = []
+    e = walnats.Event(get_random_name(), str)
+    a = walnats.Actor(get_random_name(), e, received.append, middlewares=(MW(),))
+    events_reg = walnats.Events(e)
+    actors_reg = walnats.Actors(a)
+    async with events_reg.connect() as pub_conn, actors_reg.connect() as sub_conn:
+        await pub_conn.register()
+        await sub_conn.register()
+
+        # emit the message with `delay` specified
+        await pub_conn.emit(e, 'hi', delay=.3)
+        await asyncio.sleep(.01)
+
+        # consume the message and delay it
+        with duration_between(0, .01):
+            await sub_conn.listen(burst=True)
+        assert received == []
+
+        # wait for message and process it
+        with duration_between(.28, .30):
+            await sub_conn.listen(burst=True)
+        assert received == ['hi']
+
+
 def test_actors_get():
     async def noop(_):
         pass

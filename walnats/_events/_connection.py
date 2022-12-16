@@ -2,13 +2,14 @@ from __future__ import annotations
 
 import asyncio
 from contextlib import contextmanager
-from dataclasses import dataclass
-from typing import Iterator, TypeVar
+from dataclasses import dataclass, field
+from datetime import datetime
+from typing import Callable, Iterator, TypeVar
 
 import nats
 import nats.js
 
-from .._constants import HEADER_ID, HEADER_REPLY, HEADER_TRACE
+from .._constants import HEADER_DELAY, HEADER_ID, HEADER_REPLY, HEADER_TRACE
 from ._event import BaseEvent, Event, EventWithResponse
 
 
@@ -28,6 +29,7 @@ class ConnectedEvents:
     _nc: nats.NATS
     _js: nats.js.JetStreamContext
     _events: tuple[BaseEvent, ...]
+    _now: Callable[[], float] = field(default=lambda: datetime.utcnow().timestamp())
 
     async def register(self) -> None:
         """Create Nats JetStream streams for registered events.
@@ -48,6 +50,7 @@ class ConnectedEvents:
         message: T,
         uid: str | None = None,
         trace_id: str | None = None,
+        delay: float | None = None,
     ) -> None:
         """Send an :class:`walnats.Event` into Nats. The event must be registered first.
 
@@ -61,6 +64,10 @@ class ConnectedEvents:
             trace_id: the ID of the request to use for distributed tracing.
                 It doesn't have any effect on actors but can be used by tracing
                 middlewares, such as :class:`walnats.middlewares.ZipkinMiddleware`.
+            delay: the minimum delay from now before the message can be processed
+                by an actor (in seconds). Internally, the message will be first delivered
+                to the actor immediately and the actor will put the message back with
+                the delay without triggering the handler or any middlewares.
         """
         payload = event.encode(message)
         headers = {}
@@ -68,6 +75,8 @@ class ConnectedEvents:
             headers[HEADER_ID] = uid
         if trace_id is not None:
             headers[HEADER_TRACE] = trace_id
+        if delay is not None:
+            headers[HEADER_DELAY] = f'{self._now() + delay}'
         await self._nc.publish(event.subject_name, payload, headers=headers or None)
 
     async def request(

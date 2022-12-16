@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from functools import cached_property
 from typing import TYPE_CHECKING
 
-from ._constants import HEADER_TRACE
+from ._constants import HEADER_DELAY, HEADER_TRACE
 
 
 if TYPE_CHECKING:
@@ -40,11 +40,26 @@ class Context:
         seq = self.metadata.sequence
         return seq.stream if seq else 0
 
-    @property
-    def is_first_attempt(self) -> bool:
-        """Check if this is the first attempt to handle the message.
+    @cached_property
+    def attempts(self) -> int:
+        """The number of times the message was tried to be delivered.
+
+        1 if this is the first delivery. Always positive.
+
+        It is possible that there already were delivery attempts but the handler
+        wasn't triggered. For instance, if nats.py client lost the message because of
+        a bug or message body deserialization has failed.
+        So, the number of delivery attempts might be higher than the number of
+        times the handler was triggered for the message.
         """
-        return bool(self.metadata.num_delivered)
+        attempts = self.metadata.num_delivered
+        if attempts is None:
+            return 0
+        if attempts >= 2:
+            delayed = (self._msg.headers or {}).get(HEADER_DELAY)
+            if delayed:
+                return attempts - 1
+        return attempts
 
     @cached_property
     def trace_id(self) -> str | None:

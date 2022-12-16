@@ -3,7 +3,8 @@ from __future__ import annotations
 
 import asyncio
 from concurrent.futures import Executor
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from datetime import datetime
 from logging import getLogger
 from time import perf_counter
 from typing import Awaitable, Callable, Generic, Literal, Sequence, TypeVar
@@ -11,7 +12,7 @@ from typing import Awaitable, Callable, Generic, Literal, Sequence, TypeVar
 import nats.js
 from nats.aio.msg import Msg
 
-from .._constants import HEADER_REPLY
+from .._constants import HEADER_DELAY, HEADER_REPLY
 from .._context import Context, ErrorContext, OkContext
 from .._events._event import BaseEvent, EventWithResponse
 from ..middlewares import Middleware
@@ -97,6 +98,8 @@ class Actor(Generic[T, R]):
     execute_in: Literal['thread', 'process'] | None = None
     retry_delay: Sequence[float] = (1, 2, 4, 8)
     pulse: bool = True
+
+    _now: Callable[[], float] = field(default=lambda: datetime.utcnow().timestamp())
 
     @property
     def consumer_name(self) -> str:
@@ -216,6 +219,16 @@ class Actor(Generic[T, R]):
         prefix = f'actors/{self.name}/'
         if msg.metadata.sequence:
             prefix += f'{msg.metadata.sequence.stream}/'
+
+        # if the message should be delayed, nak it with the delay and skip the message
+        delay_str = (msg.headers or {}).get(HEADER_DELAY)
+        if delay_str:
+            delayed_until = float(delay_str)
+            delay_left = delayed_until - self._now()
+            if delay_left > 1e-06:
+                await msg.nak(delay=delay_left)
+                return
+
         if self.pulse:
             pulse_task = asyncio.create_task(
                 self._pulse(msg),

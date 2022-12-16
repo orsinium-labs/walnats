@@ -53,7 +53,7 @@ class ErrorThresholdMiddleware(Middleware):
             return self.middleware.on_failure(ctx)
         if self._per_actor.setdefault(actor_name, 0) > self.actor_failures:
             return self.middleware.on_failure(ctx)
-        if (ctx.metadata.num_delivered or 0) >= self.message_failures:
+        if ctx.attempts > self.message_failures:
             return self.middleware.on_failure(ctx)
         self._overall += 1
         self._per_actor[actor_name] += 1

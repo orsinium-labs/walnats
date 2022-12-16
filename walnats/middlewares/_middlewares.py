@@ -49,14 +49,14 @@ class ExtraLogMiddleware(Middleware):
         self.logger.debug('event received', extra={
             'actor': ctx.actor.name,
             'event': ctx.actor.event.name,
-            'attempt': ctx.metadata.num_delivered,
+            'attempt': ctx.attempts,
         })
 
     def on_failure(self, ctx: ErrorContext) -> None:
         self.logger.exception('actor failed', extra={
             'actor': ctx.actor.name,
             'event': ctx.actor.event.name,
-            'attempt': ctx.metadata.num_delivered,
+            'attempt': ctx.attempts,
             'exc': str(ctx.exception),
             'exc_type': type(ctx.exception).__name__,
         })
@@ -65,7 +65,7 @@ class ExtraLogMiddleware(Middleware):
         self.logger.debug('event processed', extra={
             'actor': ctx.actor.name,
             'event': ctx.actor.event.name,
-            'attempt': ctx.metadata.num_delivered,
+            'attempt': ctx.attempts,
             'duration': ctx.duration,
         })
 
@@ -88,7 +88,7 @@ class TextLogMiddleware(Middleware):
 
     def on_start(self, ctx: Context) -> None:
         a = ctx.actor
-        attempt = ctx.metadata.num_delivered
+        attempt = ctx.attempts
         msg = f'event {a.event.name}: received by {a.name}'
         if attempt:
             msg += ' (attempt #{attempt})'
