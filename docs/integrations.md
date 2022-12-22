@@ -2,6 +2,7 @@
 
 Looking for an integration with a specific service or tool? There is a good chance walnats already provides it out of the box.
 
+1. [cloudevents](https://github.com/cloudevents/spec): {py:class}`walnats.CloudEvent`.
 1. [d2](https://github.com/terrastruct/d2): {py:class}`walnats.Service`.
 1. [cryptography](https://cryptography.io/en/latest/): {py:class}`walnats.serializers.FernetSerializer`.
 1. [datadog](https://www.datadoghq.com/): {py:class}`walnats.serializers.StatsdSerializer`.

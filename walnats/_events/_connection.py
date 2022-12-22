@@ -11,6 +11,7 @@ import nats.js
 
 from .._constants import HEADER_DELAY, HEADER_ID, HEADER_REPLY, HEADER_TRACE
 from ._event import BaseEvent, Event, EventWithResponse
+from ._cloud_event import CloudEvent
 
 
 T = TypeVar('T')
@@ -57,6 +58,7 @@ class ConnectedEvents:
         uid: str | None = None,
         trace_id: str | None = None,
         delay: float | None = None,
+        meta: CloudEvent | dict[str, str] | None = None,
     ) -> None:
         """Send an :class:`walnats.Event` into Nats. The event must be registered first.
 
@@ -74,16 +76,21 @@ class ConnectedEvents:
                 by an actor (in seconds). Internally, the message will be first delivered
                 to the actor immediately and the actor will put the message back with
                 the delay without triggering the handler or any middlewares.
+            meta: either a dict of headers to include in Nats message
+                or :class:`walnats.CloudEvent` to include headers described by
+                CloudEvents spec. Keep in mind that the spec for Nats is still WIP.
+                This meta information doesn't get into the handler but can be used
+                by middlewares or third-party tools.
         """
         assert event in self._events
         payload = event.encode(message)
-        headers = {}
-        if uid is not None:
-            headers[HEADER_ID] = uid
-        if trace_id is not None:
-            headers[HEADER_TRACE] = trace_id
-        if delay is not None:
-            headers[HEADER_DELAY] = f'{self._now() + delay}'
+        headers = self._make_headers(
+            uid=uid,
+            trace_id=trace_id,
+            delay=delay,
+            meta=meta,
+            reply=None,
+        )
         await self._nc.publish(event.subject_name, payload, headers=headers or None)
 
     async def request(
@@ -92,21 +99,21 @@ class ConnectedEvents:
         message: T,
         uid: str | None = None,
         trace_id: str | None = None,
+        delay: float | None = None,
+        meta: CloudEvent | dict[str, str] | None = None,
         timeout: float = 3,
     ) -> R:
         assert event in self._events
         payload = event.encode(message)
         inbox = self._nc.new_inbox()
+        headers = self._make_headers(
+            uid=uid,
+            trace_id=trace_id,
+            delay=delay,
+            meta=meta,
+            reply=inbox,
+        )
         sub = await self._nc.subscribe(inbox)
-
-        # We can't use Nats built-in request/reply mechanism
-        # because JetStream uses the Reply header for ack/nak.
-        headers = {HEADER_REPLY: inbox}
-        if uid is not None:
-            headers[HEADER_ID] = uid
-        if trace_id is not None:
-            headers[HEADER_TRACE] = trace_id
-
         try:
             await self._nc.publish(event.subject_name, payload, headers=headers)
             msg = await sub.next_msg(timeout=timeout)
@@ -135,3 +142,34 @@ class ConnectedEvents:
         finally:
             for task in tasks:
                 task.cancel()
+
+    def _make_headers(
+        self, *,
+        uid: str | None,
+        trace_id: str | None,
+        delay: float | None,
+        meta: CloudEvent | dict[str, str] | None,
+        reply: str | None,
+    ) -> dict[str, str]:
+        # generate headers
+        if meta is None:
+            headers = {}
+        elif isinstance(meta, dict):
+            headers = meta.copy()
+        else:
+            headers = meta.as_headers()
+        if uid is not None:
+            headers[HEADER_ID] = uid
+        elif isinstance(meta, CloudEvent) and meta.id:
+            headers[HEADER_ID] = meta.id
+        if trace_id is not None:
+            headers[HEADER_TRACE] = trace_id
+        if delay is not None:
+            headers[HEADER_DELAY] = f'{self._now() + delay}'
+
+        # We can't use Nats built-in request/reply mechanism
+        # because JetStream uses the Reply header for ack/nak.
+        if reply is not None:
+            headers[HEADER_REPLY] = reply
+
+        return headers
