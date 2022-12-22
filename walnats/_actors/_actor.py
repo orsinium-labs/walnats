@@ -30,7 +30,7 @@ class Actor(Generic[T, R]):
 
     Args:
         name: the actor name. It is used as durable consumer name in Nats,
-            and so must be unique and never change. If you ever change the name,
+            and so must be unique per event and never change. If you ever change the name,
             a consumer with the old name will be left in Nats JetStream and will
             accumulate events (until a limit is reached, and you should have Limits).
         event: the event to listen to. Exactly one instance of the same Actor

@@ -6,7 +6,10 @@ Disigning an event-driven architecture start from describing services and events
 
 Events should be stored in a separate library shared across all actors and producers that need it. This library will serve your schema registry and provide type safety for all code that emits or handles events.
 
-To declare an event, you'll need to provide the event name and the schema. The schema can be a [dataclass](https://docs.python.org/3/library/dataclasses.html), a [pydantic](https://pydantic-docs.helpmanual.io/) model, a [protobuf](https://developers.google.com/protocol-buffers/docs/pythontutorial) message, or anything else that can be serialized. In this tutorial, we'll use a dataclass because it's available in stdlib.
+To declare an event, you'll need to provide the event name and the schema:
+
++ The name is used to identify a specific event, and so must be unique across the system. You can never change it without breaking things, so choose it carefully. Prefer a name that tells what happened. For example, "order-created".
++ The schema can be a [dataclass](https://docs.python.org/3/library/dataclasses.html), a [pydantic](https://pydantic-docs.helpmanual.io/) model, a [protobuf](https://developers.google.com/protocol-buffers/docs/pythontutorial) message, or anything else that can be serialized. In this tutorial, we'll use a dataclass because it's available in stdlib.
 
 ```python
 import walntas
