@@ -25,6 +25,12 @@ class ConnectedEvents:
 
     Use it to emit events. Don't instanciate directly,
     use :meth:`walnats.Events.connect` instead.
+
+    ::
+
+        async with events.connect() as conn:
+            await conn.register()
+            await conn.emit(USER_CREATED, user)
     """
     _nc: nats.NATS
     _js: nats.js.JetStreamContext

@@ -80,6 +80,12 @@ class Actor(Generic[T, R]):
             instance of actor while this one is in progress. Disabling the pulse will
             prevent the message being stuck if a handler stucks, but that also means
             the message must be processed faster that `ack_wait`.
+
+    ::
+        async def send_email(user: User) -> None:
+            ...
+
+        SEND_EMAIL = walnats.Actor('send-email', USER_CREATED, send_email)
     """
     name: str
     event: BaseEvent[T, R]

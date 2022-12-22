@@ -2,6 +2,7 @@
 
 Looking for an integration with a specific service or tool? There is a good chance walnats already provides it out of the box.
 
+1. [d2](https://github.com/terrastruct/d2): {py:class}`walnats.Service`.
 1. [cryptography](https://cryptography.io/en/latest/): {py:class}`walnats.serializers.FernetSerializer`.
 1. [datadog](https://www.datadoghq.com/): {py:class}`walnats.serializers.StatsdSerializer`.
 1. [google cloud trace](https://cloud.google.com/trace/docs/zipkin): {py:class}`walnats.serializers.ZipkinSerializer`.

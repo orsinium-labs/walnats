@@ -14,6 +14,7 @@ class Service:
     Convert it to str or print into stdout to produce a D2 diagram.
 
     ::
+
         print(walnats.Service('users', emits=[USER_CREATED]))
     """
     name: str

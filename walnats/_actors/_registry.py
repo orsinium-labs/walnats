@@ -17,6 +17,12 @@ DEFAULT_SERVER = 'nats://localhost:4222'
 
 class Actors:
     """Registry of :class:`walnats.Actor` instances.
+
+    ::
+
+        actors = walnats.Actors(actor1, actor2, actor3)
+        async with actors.connect() as conn:
+            ...
     """
     __slots__ = ['_actors']
     _actors: tuple[Actor, ...]

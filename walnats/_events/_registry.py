@@ -17,6 +17,12 @@ DEFAULT_SERVER = 'nats://localhost:4222'
 
 class Events:
     """Registry of :class:`walnats.Event` instances.
+
+    ::
+
+        events = walnats.Events(event1, event2, event3)
+        async with events.connect() as conn:
+            ...
     """
     __slots__ = ('_events',)
     _events: tuple[BaseEvent, ...]

@@ -21,6 +21,12 @@ class ConnectedActors:
 
     Use it to listen to events. Don't instanciate directly,
     use :meth:`walnats.Actors.connect` instead.
+
+    ::
+
+        async with actors.connect() as conn:
+            await conn.register()
+            await conn.listen()
     """
     _js: nats.js.JetStreamContext
     _actors: tuple[Actor, ...]

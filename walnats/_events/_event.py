@@ -158,6 +158,10 @@ class Event(BaseEvent[T, None]):
             In most of the cases, it will produce JSON.
         description: Event description, will be shown in stream description in Nats.
         limits: Limits for messages in the Nats stream: size, age, number.
+
+    ::
+
+        USER_CREATED = walnats.Event('user-created', User)
     """
 
     def with_response(

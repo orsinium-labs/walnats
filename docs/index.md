@@ -23,6 +23,7 @@
 
     middlewares
     serializers
+    diagrams
     glossary
     integrations
 ```
