@@ -11,7 +11,7 @@
     :maxdepth: 1
     :caption: Getting started
 
-    quickstart
+    intro
     events
     pub
     actors

@@ -69,6 +69,7 @@ class ConnectedEvents:
                 to the actor immediately and the actor will put the message back with
                 the delay without triggering the handler or any middlewares.
         """
+        assert event in self._events
         payload = event.encode(message)
         headers = {}
         if uid is not None:
@@ -87,6 +88,7 @@ class ConnectedEvents:
         trace_id: str | None = None,
         timeout: float = 3,
     ) -> R:
+        assert event in self._events
         payload = event.encode(message)
         inbox = self._nc.new_inbox()
         sub = await self._nc.subscribe(inbox)

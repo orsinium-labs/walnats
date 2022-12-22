@@ -1,12 +1,12 @@
 # Events
 
-When you design an event-driven architecture, one of the first things you should consider is which events you'll have.
+Disigning an event-driven architecture start from describing services and events you're going to have. And so walnats-based project starts with defining events too.
 
 ## Declare events
 
 Events should be stored in a separate library shared across all actors and producers that need it. This library will serve your schema registry and provide type safety for all code that emits or handles events.
 
-To declare an event, you'll need to provide the event name and the model. The model can be a dataclass, a pydantic model, a protobuf message, or anything else that can be serialized. In this tutorial, we'll use a dataclass because it's available in stdlib.
+To declare an event, you'll need to provide the event name and the model. The model can be a [dataclass](https://docs.python.org/3/library/dataclasses.html), a [pydantic](https://pydantic-docs.helpmanual.io/) model, a [protobuf](https://developers.google.com/protocol-buffers/docs/pythontutorial) message, or anything else that can be serialized. In this tutorial, we'll use a dataclass because it's available in stdlib.
 
 ```python
 import walntas
@@ -27,6 +27,18 @@ If you're curious, this is the full reference for the Event class:
 ```
 
 ## Limit events
+
+A distributed system should be designed with a fault-tolerance in mind. Walnats will take care of redelivering failed messages in case a handler fails, an instance dies, or any other emergency. But for how long should it try redeliveries? And what if there are suddenly too many messages? That differs from event to event, depends on the business model and the system you build, and so only you can answer these questions. That's why you should specify limits for all events. The limits describe for how long messages can be stored, how much space they can take, how many of them can be in total, and so on. When a limit is reached, Nats server will drop old messages to fit into the limit.
+
+```python
+USER_REGISTERED = walnats.Event(
+    'user-registered', User,
+    # store at most 10k messages
+    limits=walnats.Limits(messages=10_000),
+)
+```
+
+This is the reference of Limits with all limits you can set:
 
 ```{eval-rst}
 .. autoclass:: walnats.Limits
