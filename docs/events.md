@@ -6,7 +6,7 @@ Disigning an event-driven architecture start from describing services and events
 
 Events should be stored in a separate library shared across all actors and producers that need it. This library will serve your schema registry and provide type safety for all code that emits or handles events.
 
-To declare an event, you'll need to provide the event name and the model. The model can be a [dataclass](https://docs.python.org/3/library/dataclasses.html), a [pydantic](https://pydantic-docs.helpmanual.io/) model, a [protobuf](https://developers.google.com/protocol-buffers/docs/pythontutorial) message, or anything else that can be serialized. In this tutorial, we'll use a dataclass because it's available in stdlib.
+To declare an event, you'll need to provide the event name and the schema. The schema can be a [dataclass](https://docs.python.org/3/library/dataclasses.html), a [pydantic](https://pydantic-docs.helpmanual.io/) model, a [protobuf](https://developers.google.com/protocol-buffers/docs/pythontutorial) message, or anything else that can be serialized. In this tutorial, we'll use a dataclass because it's available in stdlib.
 
 ```python
 import walntas
@@ -51,11 +51,11 @@ Declaring events:
 + The event name should be a verb that describes what happened in the system. Examples: "user-registered", "parcel-delivered", "order-created".
 + Pick some case style and stick to it. I use kebab-case.
 + Choose the event name carefully. You cannot rename the event after it reaches the production. Well, you can, but that's very hard to do without loosing (or duplicating) messages because actors and producers are deployed independently.
-+ If you have non-Python microservices, consider also using some kind of event registry, like [eventcatalog](https://github.com/boyney123/eventcatalog) or [BSR](https://docs.buf.build/bsr/introduction), so that event definition (and especially schemas for models) are available for all services.
++ If you have non-Python microservices, consider also using some kind of event registry, like [eventcatalog](https://github.com/boyney123/eventcatalog) or [BSR](https://docs.buf.build/bsr/introduction), so that event definition (and especially schemas) are available for all services.
 + Use `SCREAMING_SNAKE_CASE` for the variable where the event is assigned. Events are immutable, and so can be considered constants.
 + When you add a new field in an existing event, provide the default value for it. It is possible that the actor expecting the field is deployed before the producer, or an old event emitted by an old producer arrives. Always keep in mind backward compatibility. Changing a service is atomic and can be done in one deployment, changing multiple services isn't.
 
-Which fields to include in the event model:
+Which fields to include in the event schema:
 
 + Include in the event fields that will be needed to many or all actors. For example, "parcel-status-changed" should include not only the parce ID in the database but also the old and the new status of the parcel. That way, the actors that do something only to the parcel moving in a specific status will be able to check the status without doing any database requests.
 + Do not include fields that are not needed or needed only for a handful of actors, it doesn't scale well. For example, if there is a "send-email" actor that reacts to "user-registered" event, trying to fit into the event all information needed for the email is a dead end. Each time you decide to add more information into email, you'll need to update not only the actor but also the producer of the event, which defeats the whole point of event-driven architecture. Producers (and hence the events) should not depend on the implementation of a specific actor.
