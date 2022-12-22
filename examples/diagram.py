@@ -1,3 +1,10 @@
+"""Example of drawing d2 diagrams of walnats-based architecture.
+
+Usage:
+    python3 ./examples/diagram.py | d2 - > arch.svg
+    chromium ./arch.svg
+"""
+
 from __future__ import annotations
 from dataclasses import dataclass
 import walnats
@@ -22,7 +29,7 @@ USER_CREATED = walnats.Event('user-created', User)
 USER_UPDATED = walnats.Event('user-updated', User)
 EMAIL_SENT = walnats.Event('email-sent', Email)
 
-services = walnats.Services(
+services = [
     walnats.Service(
         name='users',
         emits=walnats.Events(USER_CREATED, USER_UPDATED),
@@ -44,6 +51,8 @@ services = walnats.Services(
             walnats.Actor('record', EMAIL_SENT, noop),
         ),
     ),
-)
+]
+
 print('direction: right')
-print(services)
+for s in services:
+    print(s)

@@ -2,7 +2,7 @@
 """
 from . import middlewares, serializers, types
 from ._actors import Actor, Actors
-from ._diagrams import Service, Services
+from ._service import Service
 from ._events import Event, Events, Limits
 
 
@@ -15,7 +15,6 @@ __all__ = [
     'Events',
     'Limits',
     'Service',
-    'Services',
 
     # modules
     'serializers',
