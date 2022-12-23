@@ -3,9 +3,10 @@
 Looking for an integration with a specific service or tool? There is a good chance walnats already provides it out of the box.
 
 1. [cloudevents](https://github.com/cloudevents/spec): {py:class}`walnats.CloudEvent`.
-1. [d2](https://github.com/terrastruct/d2): {py:class}`walnats.Service`.
 1. [cryptography](https://cryptography.io/en/latest/): {py:class}`walnats.serializers.FernetSerializer`.
+1. [d2](https://github.com/terrastruct/d2): {py:meth}`walnats.Services.get_d2`.
 1. [datadog](https://www.datadoghq.com/): {py:class}`walnats.serializers.StatsdSerializer`.
+1. [event storming](https://en.wikipedia.org/wiki/Event_storming): {py:meth}`walnats.Services.get_d2`.
 1. [google cloud trace](https://cloud.google.com/trace/docs/zipkin): {py:class}`walnats.serializers.ZipkinSerializer`.
 1. [marshmallow](https://github.com/marshmallow-code/marshmallow): {py:class}`walnats.serializers.MarshmallowSerializer`.
 1. [messagepack](https://msgpack.org/index.html) (msgpack): {py:class}`walnats.serializers.MessagePackSerializer`.
