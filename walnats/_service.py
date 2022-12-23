@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Iterator
 
+
 if TYPE_CHECKING:
     import walnats
 

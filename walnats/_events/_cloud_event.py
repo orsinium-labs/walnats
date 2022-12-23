@@ -14,7 +14,7 @@ class CloudEvent:
     id: str
     source: str
     type: str
-    specversion: str = "1.0"
+    specversion: str = '1.0'
 
     # optional
     datacontenttype: str | None = None

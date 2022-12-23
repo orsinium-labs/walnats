@@ -10,8 +10,8 @@ import nats
 import nats.js
 
 from .._constants import HEADER_DELAY, HEADER_ID, HEADER_REPLY, HEADER_TRACE
-from ._event import BaseEvent, Event, EventWithResponse
 from ._cloud_event import CloudEvent
+from ._event import BaseEvent, Event, EventWithResponse
 
 
 T = TypeVar('T')

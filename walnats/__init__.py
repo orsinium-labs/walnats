@@ -2,8 +2,8 @@
 """
 from . import middlewares, serializers, types
 from ._actors import Actor, Actors
+from ._events import CloudEvent, Event, Events, Limits
 from ._service import Service
-from ._events import Event, Events, Limits, CloudEvent
 
 
 __version__ = '0.1.0'
