@@ -23,7 +23,7 @@
 
     middlewares
     serializers
-    diagrams
+    services
     glossary
     integrations
 ```

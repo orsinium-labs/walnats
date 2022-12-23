@@ -31,30 +31,26 @@ USER_CREATED = walnats.Event('user-created', User)
 USER_UPDATED = walnats.Event('user-updated', User)
 EMAIL_SENT = walnats.Event('email-sent', Email)
 
-services = [
-    walnats.Service(
-        name='users',
-        emits=walnats.Events(USER_CREATED, USER_UPDATED),
+services = walnats.Services()
+services.add(
+    name='users',
+    emits=walnats.Events(USER_CREATED, USER_UPDATED),
+)
+services.add(
+    name='notifications',
+    emits=walnats.Events(EMAIL_SENT),
+    defines=walnats.Actors(
+        walnats.Actor('send-email', USER_CREATED, noop),
+        walnats.Actor('send-email', USER_UPDATED, noop),
+        walnats.Actor('send-sms', USER_CREATED, noop),
+        walnats.Actor('send-sms', USER_UPDATED, noop),
     ),
-    walnats.Service(
-        name='notifications',
-        emits=walnats.Events(EMAIL_SENT),
-        defines=walnats.Actors(
-            walnats.Actor('send-email', USER_CREATED, noop),
-            walnats.Actor('send-email', USER_UPDATED, noop),
-            walnats.Actor('send-sms', USER_CREATED, noop),
-            walnats.Actor('send-sms', USER_UPDATED, noop),
-        ),
+)
+services.add(
+    name='audit-log',
+    defines=walnats.Actors(
+        walnats.Actor('record', USER_CREATED, noop),
+        walnats.Actor('record', EMAIL_SENT, noop),
     ),
-    walnats.Service(
-        name='audit-log',
-        defines=walnats.Actors(
-            walnats.Actor('record', USER_CREATED, noop),
-            walnats.Actor('record', EMAIL_SENT, noop),
-        ),
-    ),
-]
-
-print('direction: right')
-for s in services:
-    print(s)
+)
+print(services.get_d2())
