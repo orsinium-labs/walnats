@@ -108,7 +108,8 @@ class Service:
     defines: walnats.Actors | None = None
 
     def d2_iter_lines(self, colors: bool) -> Iterator[str]:
-        yield f'{self.name}.style: {SERVICE_STYLE}'
+        if colors:
+            yield f'{self.name}.style: {SERVICE_STYLE}'
 
         if self.emits is not None:
             for e in self.emits:
@@ -119,6 +120,9 @@ class Service:
 
         if self.defines is not None:
             for a in self.defines:
-                yield f'{a.event.name} -> {self.name}.{a.name}: {ARROW_STYLE}'
+                if colors:
+                    yield f'{a.event.name} -> {self.name}.{a.name}: {ARROW_STYLE}'
+                else:
+                    yield f'{a.event.name} -> {self.name}.{a.name}'
                 if colors:
                     yield f'{self.name}.{a.name}.style: {ACTOR_STYLE}'
