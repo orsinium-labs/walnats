@@ -2,12 +2,13 @@
 from __future__ import annotations
 
 import asyncio
-from concurrent.futures import Executor
 from dataclasses import dataclass, field
 from datetime import datetime
 from logging import getLogger
 from time import perf_counter
-from typing import Awaitable, Callable, Generic, Literal, Sequence, TypeVar
+from typing import (
+    TYPE_CHECKING, Awaitable, Callable, Generic, Literal, Sequence, TypeVar,
+)
 
 import nats.js
 from nats.aio.msg import Msg
@@ -15,8 +16,14 @@ from nats.aio.msg import Msg
 from .._constants import HEADER_DELAY, HEADER_REPLY
 from .._context import Context, ErrorContext, OkContext
 from .._events._event import BaseEvent, EventWithResponse
-from ..middlewares import Middleware
+from ._priority import Priority
 from ._tasks import Tasks
+
+
+if TYPE_CHECKING:
+    from concurrent.futures import Executor
+
+    from ..middlewares import Middleware
 
 
 T = TypeVar('T')
@@ -80,6 +87,9 @@ class Actor(Generic[T, R]):
             instance of actor while this one is in progress. Disabling the pulse will
             prevent the message being stuck if a handler stucks, but that also means
             the message must be processed faster that `ack_wait`.
+        priority: priority of the actor compared to other actors. Actors with a higher
+            priority have a higher chance to get started earlier. Longer an actor waits
+            its turn, higher its priority gets.
 
     ::
         async def send_email(user: User) -> None:
@@ -104,6 +114,7 @@ class Actor(Generic[T, R]):
     execute_in: Literal['thread', 'process'] | None = None
     retry_delay: Sequence[float] = (1, 2, 4, 8)
     pulse: bool = True
+    priority: Priority = Priority.NORMAL
 
     _now: Callable[[], float] = field(default=lambda: datetime.utcnow().timestamp())
 
@@ -142,7 +153,7 @@ class Actor(Generic[T, R]):
         self, *,
         js: nats.js.JetStreamContext,
         poll_sem: asyncio.Semaphore,
-        job_sem: asyncio.Semaphore,
+        global_sem: asyncio.Semaphore,
         poll_delay: float,
         burst: bool,
         batch: int,
@@ -163,7 +174,7 @@ class Actor(Generic[T, R]):
             while True:
                 await self._pull_and_handle(
                     poll_sem=poll_sem,
-                    job_sem=job_sem,
+                    global_sem=global_sem,
                     actor_sem=actor_sem,
                     poll_delay=poll_delay,
                     batch=batch,
@@ -181,7 +192,7 @@ class Actor(Generic[T, R]):
     async def _pull_and_handle(
         self, *,
         poll_sem: asyncio.Semaphore,
-        job_sem: asyncio.Semaphore,
+        global_sem: asyncio.Semaphore,
         actor_sem: asyncio.Semaphore,
         poll_delay: float,
         batch: int,
@@ -193,9 +204,9 @@ class Actor(Generic[T, R]):
         if actor_sem.locked():
             await actor_sem.acquire()
             actor_sem.release()
-        if job_sem.locked():
-            await job_sem.acquire()
-            job_sem.release()
+        if global_sem.locked():
+            await global_sem.acquire()
+            global_sem.release()
 
         # poll messages
         async with poll_sem:
@@ -208,7 +219,7 @@ class Actor(Generic[T, R]):
         for msg in msgs:
             tasks.start(self._handle_message(
                 msg=msg,
-                job_sem=job_sem,
+                global_sem=global_sem,
                 actor_sem=actor_sem,
                 tasks=tasks,
                 executor=executor,
@@ -217,7 +228,7 @@ class Actor(Generic[T, R]):
     async def _handle_message(
         self,
         msg: Msg,
-        job_sem: asyncio.Semaphore,
+        global_sem: asyncio.Semaphore,
         actor_sem: asyncio.Semaphore,
         tasks: Tasks,
         executor: Executor | None,
@@ -242,7 +253,7 @@ class Actor(Generic[T, R]):
             )
         event = None
         try:
-            async with actor_sem, job_sem:
+            async with actor_sem, self.priority.acquire(global_sem):
                 start = perf_counter()
                 event = self.event.decode(msg.data)
 

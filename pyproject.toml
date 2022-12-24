@@ -50,6 +50,7 @@ docs = [
     "myst-parser",
 ]
 test = [
+    "hypothesis",
     "pytest",
     "pytest-cov",
     "pytest-asyncio",

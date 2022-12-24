@@ -87,7 +87,7 @@ class ConnectedActors:
         assert max_threads is None or max_threads >= 1
 
         poll_sem = asyncio.Semaphore(max_polls or len(self._actors))
-        job_sem = asyncio.Semaphore(max_jobs)
+        global_sem = asyncio.Semaphore(max_jobs)
         thread_pool: ThreadPoolExecutor | None = None
         proc_pool: ProcessPoolExecutor | None = None
         with ExitStack() as stack:
@@ -108,7 +108,7 @@ class ConnectedActors:
                     js=self._js,
                     burst=burst,
                     poll_sem=poll_sem,
-                    job_sem=job_sem,
+                    global_sem=global_sem,
                     batch=batch,
                     poll_delay=poll_delay,
                     executor=executor,
