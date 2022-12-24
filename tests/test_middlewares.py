@@ -250,10 +250,12 @@ async def test_StatsdMiddleware(udp_server: UDPLogProtocol) -> None:
     from datadog.dogstatsd import DogStatsd
 
     switch = False
+    received = []
 
     async def handler(msg: str) -> None:
         nonlocal switch
         switch = not switch
+        received.append(msg)
         if switch:
             1 / 0
 
@@ -262,13 +264,18 @@ async def test_StatsdMiddleware(udp_server: UDPLogProtocol) -> None:
         handler, ['hi'] * 40,
         walnats.middlewares.StatsdMiddleware(client),
     )
+    assert len(received) == 40
+    client.flush()
+    await asyncio.sleep(.1)
+    # remove numbers from `duration` metric, so it can be aggregated
+    hist = [h.split(':0.')[0] for h in udp_server.hist]
     expected = [
-        (r'walnats\..+\..+\.started:1\|c', 16),
-        (r'walnats\..+\..+\.failed:1\|c', 2),
-        (r'walnats\..+\..+\.processed:1\|c', 1),
-        (r'walnats\..+\..+\.duration:0.\d+\|h', 1),
+        (r'walnats\..+\..+\.started:1\|c', 40),
+        (r'walnats\..+\..+\.failed:1\|c', 20),
+        (r'walnats\..+\..+\.processed:1\|c', 20),
+        (r'walnats\..+\..+\.duration', 20),
     ]
-    fuzzy_match_counter(udp_server.hist, expected)
+    fuzzy_match_counter(hist, expected)
 
 
 async def test_PrometheusMiddleware() -> None:
