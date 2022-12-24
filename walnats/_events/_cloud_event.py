@@ -35,7 +35,7 @@ class CloudEvent:
         """
         result = {k: v for k, v in asdict(self).items() if v is not None}
         if self.time is not None:
-            result['time'] = self.time.isoformat()
+            result['time'] = f'{self.time.isoformat()}Z'
         return result
 
     def as_headers(self) -> dict[str, str]:

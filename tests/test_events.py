@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+from datetime import datetime
 
 import walnats
 
@@ -38,3 +39,33 @@ async def test_events_monitor():
             asyncio.create_task(conn.emit(event, 'hello'))
             recv = await asyncio.wait_for(monitor.get(), timeout=2)
             assert recv == 'hello'
+
+
+async def test_CloudEvent_as_headers():
+    ce = walnats.CloudEvent(
+        id='hi123',
+        source='/sensors/tn-123/alerts',
+        type='com.example.object.delete.v2',
+    )
+    assert ce.as_headers() == {
+        'ce-id': 'hi123',
+        'ce-source': '/sensors/tn-123/alerts',
+        'ce-type': 'com.example.object.delete.v2',
+        'ce-specversion': '1.0',
+    }
+
+
+async def test_CloudEvent_as_headers__with_time():
+    ce = walnats.CloudEvent(
+        id='hi123',
+        source='/sensors/tn-123/alerts',
+        type='com.example.object.delete.v2',
+        time=datetime(2023, 12, 31, 23, 59, 54),
+    )
+    assert ce.as_headers() == {
+        'ce-id': 'hi123',
+        'ce-source': '/sensors/tn-123/alerts',
+        'ce-type': 'com.example.object.delete.v2',
+        'ce-specversion': '1.0',
+        'ce-time': '2023-12-31T23:59:54Z',
+    }
