@@ -3,9 +3,13 @@ from __future__ import annotations
 import asyncio
 import re
 import socket
+import time
 from collections import Counter
+from contextlib import contextmanager
 from random import choice
 from string import ascii_letters
+
+import walnats
 
 
 class UDPLogProtocol(asyncio.DatagramProtocol):
@@ -45,3 +49,39 @@ def fuzzy_match_counter(items: list[str], rules: list[tuple[str, int]]):
         act_val = act_val.rstrip()
         assert re.fullmatch(exp_val, act_val), f'{repr(act_val)} ~= /{exp_val}/'
         assert act_count == exp_count, f'{act_count} != {exp_count}'
+
+
+async def run_burst(
+    *actors: walnats.Actor,
+    messages: list[tuple[walnats.Event[str], str]],
+    **kwargs,
+) -> None:
+    events_names = set()
+    events: list[walnats.types.BaseEvent] = []
+    e: walnats.types.BaseEvent
+    for e, _ in messages:
+        if e.name not in events_names:
+            events.append(e)
+            events_names.add(e.name)
+    for a in actors:
+        e = a.event
+        if e.name not in events_names:
+            events.append(e)
+            events_names.add(e.name)
+
+    events_reg = walnats.Events(*events)
+    actors_reg = walnats.Actors(*actors)
+    async with events_reg.connect() as pub_conn, actors_reg.connect() as sub_conn:
+        await pub_conn.register()
+        await sub_conn.register()
+        await asyncio.gather(*[pub_conn.emit(e, m) for e, m in messages])
+        await asyncio.sleep(.01)
+        await sub_conn.listen(burst=True, **kwargs)
+
+
+@contextmanager
+def duration_between(min_dur: float, max_dur: float):
+    start = time.perf_counter()
+    yield
+    actual_dur = time.perf_counter() - start
+    assert min_dur <= actual_dur < max_dur

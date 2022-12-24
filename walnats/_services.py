@@ -5,8 +5,9 @@ from typing import TYPE_CHECKING, Iterator
 
 
 if TYPE_CHECKING:
-    import walnats
     from typing import Literal
+
+    import walnats
 
 # https://en.wikipedia.org/wiki/Event_storming#Example_notes
 ACTOR_STYLE = '{stroke: "#2980b9"; fill: "#e9f2fb"}'

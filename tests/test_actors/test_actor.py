@@ -2,50 +2,12 @@ from __future__ import annotations
 
 import asyncio
 import time
-from contextlib import contextmanager
 
-import nats
 import pytest
 
 import walnats
 
-from .helpers import get_random_name
-
-
-async def run_burst(
-    *actors: walnats.Actor,
-    messages: list[tuple[walnats.Event[str], str]],
-    **kwargs,
-) -> None:
-    events_names = set()
-    events: list[walnats.types.BaseEvent] = []
-    e: walnats.types.BaseEvent
-    for e, _ in messages:
-        if e.name not in events_names:
-            events.append(e)
-            events_names.add(e.name)
-    for a in actors:
-        e = a.event
-        if e.name not in events_names:
-            events.append(e)
-            events_names.add(e.name)
-
-    events_reg = walnats.Events(*events)
-    actors_reg = walnats.Actors(*actors)
-    async with events_reg.connect() as pub_conn, actors_reg.connect() as sub_conn:
-        await pub_conn.register()
-        await sub_conn.register()
-        await asyncio.gather(*[pub_conn.emit(e, m) for e, m in messages])
-        await asyncio.sleep(.01)
-        await sub_conn.listen(burst=True, **kwargs)
-
-
-@contextmanager
-def duration_between(min_dur: float, max_dur: float):
-    start = time.perf_counter()
-    yield
-    actual_dur = time.perf_counter() - start
-    assert min_dur <= actual_dur < max_dur
+from ..helpers import duration_between, get_random_name, run_burst
 
 
 async def test_many_messages_one_event() -> None:
@@ -137,37 +99,6 @@ async def test_delay() -> None:
         assert received == ['hi']
 
 
-def test_actors_get():
-    async def noop(_):
-        pass
-
-    e = walnats.Event(get_random_name(), str)
-    actors = walnats.Actors(
-        walnats.Actor('a1', e, noop),
-        walnats.Actor('a2', e, noop),
-        walnats.Actor('a3', e, noop),
-    )
-    a1 = actors.get('a1')
-    assert a1
-    assert a1.name == 'a1'
-    a2 = actors.get('a2')
-    assert a2
-    assert a2.name == 'a2'
-    assert actors.get('something') is None
-
-
-def test_actors_iter():
-    async def noop(_):
-        pass
-
-    e = walnats.Event(get_random_name(), str)
-    a1 = walnats.Actor('a1', e, noop)
-    a2 = walnats.Actor('a3', e, noop)
-    a3 = walnats.Actor('a2', e, noop)
-    actors = walnats.Actors(a1, a2, a3)
-    assert list(actors) == [a1, a2, a3]
-
-
 @pytest.mark.parametrize('delays, attempt, expected', [
     ([], 0, 0),
     ([], 1, 0),
@@ -182,19 +113,3 @@ def test_get_nak_delay(delays, attempt, expected):
     e = walnats.Event('', str)
     a = walnats.Actor('', e, lambda _: None, retry_delay=delays)
     assert a._get_nak_delay(attempt) == expected
-
-
-async def test_actors_dont_own_connection():
-    nc = await nats.connect()
-
-    e = walnats.Event(get_random_name(), str)
-    events = walnats.Events(e)
-    async with events.connect(nc, close=False) as econn:
-        await econn.register()
-    assert not nc.is_closed
-
-    a = walnats.Actor(get_random_name(), e, lambda _: None)
-    actors = walnats.Actors(a)
-    async with actors.connect(nc, close=False) as aconn:
-        await aconn.register()
-    assert not nc.is_closed
