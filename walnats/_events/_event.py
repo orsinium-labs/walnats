@@ -2,7 +2,8 @@ from __future__ import annotations
 
 import asyncio
 import dataclasses
-from typing import Generic, TypeVar
+import itertools
+from typing import Generic, Iterable, TypeVar
 
 import nats
 import nats.js
@@ -42,8 +43,8 @@ class Limits:
 @dataclasses.dataclass
 class BaseEvent(Generic[T, R]):
     """
-    Internal-only class to provide shared behavior
-    for :class:`walnats.Event` and :class:`walnats.EventWithResponse`.
+    Internal-only class to provide shared behavior for different kinds of events.
+    Use :class:`walnats.Event` and its methods to create an event.
     """
     name: str
     schema: type[T]
@@ -128,7 +129,7 @@ class EventWithResponse(BaseEvent[T, R]):
     def encode_response(self, msg: R) -> bytes:
         """Convert response payload into bytes.
 
-        Used by Actor to transfer the response over the network.
+        Used by :class:`walnats.Actor` to transfer the response over the network.
         """
         if self.response_serializer is None:
             self.response_serializer = get_serializer(self.response_schema)
@@ -137,12 +138,23 @@ class EventWithResponse(BaseEvent[T, R]):
     def decode_response(self, data: bytes) -> R:
         """Convert raw bytes from event payload into a Python type.
 
-        Used by `ConnectedEvents.request` to extract the response from Nats JetStream
-        message payload.
+        Used by :class:`walnats.types.ConnectedEvents.request` to extract
+        the response from Nats JetStream message payload.
         """
         if self.response_serializer is None:
             self.response_serializer = get_serializer(self.response_schema)
         return self.response_serializer.decode(data)
+
+
+@dataclasses.dataclass
+class PeriodicEvent(BaseEvent):
+    patterns: list[str] = dataclasses.field(default_factory=list)
+
+    @property
+    def _stream_config(self) -> nats.js.api.StreamConfig:
+        config = super()._stream_config
+        config.subjects = self.patterns
+        return config
 
 
 class Event(BaseEvent[T, None]):
@@ -169,14 +181,55 @@ class Event(BaseEvent[T, None]):
         schema: type[R],
         serializer: Serializer[R] | None = None,
     ) -> EventWithResponse[T, R]:
-        """Create a copy of the Event that can be used with ConnectedEvents.request.
+        """
+        Create a copy of the Event that can be used with
+        :meth:`walnats.types.ConnectedEvents.request`.
 
-        The same copy must be used with the Actor.
+        The same copy must be used with the :class:`walnats:Actor`.
         Otherwise, the response won't be emitted.
         """
         return EventWithResponse(
             response_schema=schema,
             response_serializer=serializer,
+
+            name=self.name,
+            schema=self.schema,
+            description=self.description,
+            limits=self.limits,
+            serializer=self.serializer,
+        )
+
+    def with_schedule(
+        self,
+        year: int | Iterable[int] | None = None,
+        month: int | Iterable[int] | None = None,
+        day: int | Iterable[int] | None = None,
+        hour: int | Iterable[int] | None = None,
+        minute: int | Iterable[int] | None = None,
+        prefix: str = 'time',
+    ) -> PeriodicEvent:
+        parts: list[tuple[str, ...]] = []
+        for part in (year, month, day, hour, minute):
+            subparts: tuple[str, ...]
+            if isinstance(part, int):
+                assert part < 60 or part > 2021
+                subparts = (f'{part:02}',)
+            elif part is None:
+                subparts = ('*',)
+            else:
+                subparts = tuple(f'{p:02}' for p in part)
+            parts.append(subparts)
+
+        patterns: list[str] = []
+        pattern: tuple[str, ...]
+        for pattern in itertools.product(*parts):
+            assert len(pattern) == 5
+            suffix = '.'.join(pattern)
+            patterns.append(f'{prefix}.{suffix}')
+
+        return PeriodicEvent(
+            patterns=patterns,
+
             name=self.name,
             schema=self.schema,
             description=self.description,

@@ -7,3 +7,4 @@ __pycache__/
 /.task/
 /.venvs/
 /docs/build/
+/tmp.py
