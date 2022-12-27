@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 
 
 @dataclasses.dataclass(frozen=True)
-class Scheduler:
+class Clock:
     event: Event[datetime] = dataclasses.field(
         default_factory=lambda: Event('minute-passed', datetime),
     )
