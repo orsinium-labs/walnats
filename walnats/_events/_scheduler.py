@@ -1,35 +1,39 @@
 from __future__ import annotations
 
 import asyncio
-from dataclasses import dataclass
+import dataclasses
 from datetime import datetime
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Callable
 
-from .._constants import HEADER_ID
 from .._tasks import Tasks
+from ._event import Event
 
 
 if TYPE_CHECKING:
     import walnats
 
 
-@dataclass(frozen=True)
+@dataclasses.dataclass(frozen=True)
 class Scheduler:
-    prefix: str = 'time'
-    headers: dict[str, str] | None = None
+    event: Event[datetime] = dataclasses.field(
+        default_factory=lambda: Event('minute-passed', datetime),
+    )
+    meta: dict[str, str] | None = None
+    period: int = 60
+    now: Callable[[], datetime] = datetime.now
 
     async def run(
         self,
         conn: walnats.types.ConnectedEvents,
         burst: bool = False,
     ) -> None:
-        tasks = Tasks('scheduler')
+        tasks = Tasks(f'clock/{self.event.name}')
         try:
             while True:
                 await self._wait()
                 now = datetime.now()
                 coro = self._emit(conn, now)
-                tasks.start(coro, f'scheduler/tick/{now.minute}')
+                tasks.start(coro, f'clock/{self.event}/tick/{now.minute}')
                 if burst:
                     await tasks.wait()
                     return
@@ -39,8 +43,8 @@ class Scheduler:
     async def _wait(self) -> None:
         """Wait until the next minute +1s.
         """
-        now = datetime.now()
-        delay = 61 - now.second
+        now = self.now().timestamp()
+        delay = self.period - (now % self.period) + 1
         await asyncio.sleep(delay)
 
     async def _emit(
@@ -48,9 +52,5 @@ class Scheduler:
         conn: walnats.types.ConnectedEvents,
         now: datetime,
     ) -> None:
-        parts = [f'{p:02}' for p in now.timetuple()[:5]]
-        suffix = '.'.join(parts)
-        headers = {HEADER_ID: suffix}
-        if self.headers is not None:
-            headers.update(self.headers)
-        await conn._nc.publish(f'{self.prefix}.{suffix}')
+        uid = now.timestamp() % self.period
+        await conn.emit(self.event, now, uid=f'{uid}', meta=self.meta)

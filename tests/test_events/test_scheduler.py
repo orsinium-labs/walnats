@@ -1,38 +1,29 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
-import pytest
+import asyncio
+from datetime import datetime
 
 import walnats
 
 from ..helpers import get_random_name
 
 
-if TYPE_CHECKING:
-    from _pytest.monkeypatch import MonkeyPatch
-
-
-async def noop(*args) -> None:
-    return None
-
-
-@pytest.mark.skip
-async def test_scheduler(event: walnats.Event, monkeypatch: MonkeyPatch):
+async def test_scheduler() -> None:
     received = []
 
     def handler(event) -> None:
         received.append(event)
 
-    e = event.with_schedule()
+    e = walnats.Event(get_random_name(), datetime)
+    s = walnats.Scheduler(e, period=1)
     a = walnats.Actor(get_random_name(), e, handler)
-    actors = walnats.Actors(a)
-    events = walnats.Events(e)
+    events_reg = walnats.Events(e)
+    actors_reg = walnats.Actors(a)
 
-    monkeypatch.setattr('walnats._events._scheduler.asyncio.sleep', noop)
-    async with actors.connect() as acon, events.connect() as econ:
-        await econ.register()
-        await acon.register()
-        await walnats.Scheduler().run(econ, burst=True)
-        await acon.listen(burst=True)
+    async with events_reg.connect() as pub_conn, actors_reg.connect() as sub_conn:
+        await pub_conn.register()
+        await sub_conn.register()
+        await s.run(pub_conn, burst=True)
+        await asyncio.sleep(.01)
+        await sub_conn.listen(burst=True)
     assert len(received) == 1
