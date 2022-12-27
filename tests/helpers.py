@@ -27,7 +27,7 @@ class UDPLogProtocol(asyncio.DatagramProtocol):
         self.hist.append(data.decode('utf8'))
 
 
-def random_port() -> int:
+def get_random_port() -> int:
     sock = socket.socket()
     sock.bind(('', 0))
     return sock.getsockname()[1]

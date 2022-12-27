@@ -6,7 +6,7 @@ from typing import Coroutine, final
 
 @final
 class Tasks:
-    """Supervise tasks created by an Actor.
+    """Supervise multiple async tasks.
     """
     __slots__ = ('_tasks', '_cleanup_every', '_since_cleanup', '_name', '_done')
     _name: str

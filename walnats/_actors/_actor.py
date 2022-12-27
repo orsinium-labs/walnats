@@ -16,8 +16,8 @@ from nats.aio.msg import Msg
 from .._constants import HEADER_DELAY, HEADER_REPLY
 from .._context import Context, ErrorContext, OkContext
 from .._events._event import BaseEvent, EventWithResponse
+from .._tasks import Tasks
 from ._priority import Priority
-from ._tasks import Tasks
 
 
 if TYPE_CHECKING:

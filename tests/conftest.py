@@ -4,12 +4,14 @@ import asyncio
 
 import pytest
 
-from .helpers import UDPLogProtocol, random_port
+import walnats
+
+from .helpers import UDPLogProtocol, get_random_name, get_random_port
 
 
 @pytest.fixture
 async def udp_server():
-    port = random_port()
+    port = get_random_port()
     loop = asyncio.get_event_loop()
     transport, protocol = await loop.create_datagram_endpoint(
         lambda: UDPLogProtocol(port),
@@ -17,3 +19,13 @@ async def udp_server():
     )
     yield protocol
     transport.close()
+
+
+@pytest.fixture
+async def event() -> walnats.Event[str]:
+    return walnats.Event(get_random_name(), str)
+
+
+@pytest.fixture
+async def actor(event: walnats.Event[str]) -> walnats.Actor[str, None]:
+    return walnats.Actor(get_random_name(), event, lambda _: None)

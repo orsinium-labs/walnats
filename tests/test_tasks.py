@@ -1,6 +1,6 @@
 import asyncio
 
-from walnats._actors._tasks import Tasks
+from walnats._tasks import Tasks
 
 
 async def test_wait():
