@@ -2,7 +2,7 @@
 """
 from . import middlewares, serializers, types
 from ._actors import Actor, Actors, Priority
-from ._events import CloudEvent, Event, Events, Limits
+from ._events import CloudEvent, Event, Events, Limits, Scheduler
 from ._services import Services
 
 
@@ -16,6 +16,7 @@ __all__ = [
     'Events',
     'Limits',
     'Priority',
+    'Scheduler',
     'Services',
 
     # modules
