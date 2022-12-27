@@ -2,8 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import dataclasses
-import itertools
-from typing import Generic, Iterable, TypeVar
+from typing import Generic, TypeVar
 
 import nats
 import nats.js
@@ -146,17 +145,6 @@ class EventWithResponse(BaseEvent[T, R]):
         return self.response_serializer.decode(data)
 
 
-@dataclasses.dataclass
-class PeriodicEvent(BaseEvent):
-    patterns: list[str] = dataclasses.field(default_factory=list)
-
-    @property
-    def _stream_config(self) -> nats.js.api.StreamConfig:
-        config = super()._stream_config
-        config.subjects = self.patterns
-        return config
-
-
 class Event(BaseEvent[T, None]):
     """Container for information about event: stream config, schema, serializer.
 
@@ -191,44 +179,6 @@ class Event(BaseEvent[T, None]):
         return EventWithResponse(
             response_schema=schema,
             response_serializer=serializer,
-
-            name=self.name,
-            schema=self.schema,
-            description=self.description,
-            limits=self.limits,
-            serializer=self.serializer,
-        )
-
-    def with_schedule(
-        self,
-        year: int | Iterable[int] | None = None,
-        month: int | Iterable[int] | None = None,
-        day: int | Iterable[int] | None = None,
-        hour: int | Iterable[int] | None = None,
-        minute: int | Iterable[int] | None = None,
-        prefix: str = 'time',
-    ) -> PeriodicEvent:
-        parts: list[tuple[str, ...]] = []
-        for part in (year, month, day, hour, minute):
-            subparts: tuple[str, ...]
-            if isinstance(part, int):
-                assert part < 60 or part > 2021
-                subparts = (f'{part:02}',)
-            elif part is None:
-                subparts = ('*',)
-            else:
-                subparts = tuple(f'{p:02}' for p in part)
-            parts.append(subparts)
-
-        patterns: list[str] = []
-        pattern: tuple[str, ...]
-        for pattern in itertools.product(*parts):
-            assert len(pattern) == 5
-            suffix = '.'.join(pattern)
-            patterns.append(f'{prefix}.{suffix}')
-
-        return PeriodicEvent(
-            patterns=patterns,
 
             name=self.name,
             schema=self.schema,
