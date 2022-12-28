@@ -11,12 +11,12 @@ __all__ = [
     # classes
     'Actor',
     'Actors',
+    'Clock',
     'CloudEvent',
     'Event',
     'Events',
     'Limits',
     'Priority',
-    'Clock',
     'Services',
 
     # modules

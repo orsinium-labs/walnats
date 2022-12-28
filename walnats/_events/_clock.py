@@ -49,10 +49,8 @@ class Clock:
             the next one, it won't be emitted.
         now: callback that returns the current time. Useful for testing or black magic.
 
-    It is safe to run multiple clocks on the same nats instance,
-    events will not be duplicated. It might be a good idea to run a separate clock
-    on each nats cluster, so that in case of netwrok failure between clusters
-    events will still be coming in each of them.
+    It is safe to run multiple clocks on the same Nats instance,
+    events will not be duplicated.
     """
     event: Event[datetime] = dataclasses.field(
         default_factory=lambda: Event('minute-passed', datetime),

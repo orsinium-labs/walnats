@@ -33,4 +33,5 @@
 
     glossary
     integrations
+    api
 ```
