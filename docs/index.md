@@ -9,7 +9,7 @@
 
 .. toctree::
     :maxdepth: 1
-    :caption: Getting started
+    :caption: Basics
 
     intro
     events
@@ -19,11 +19,18 @@
 
 .. toctree::
     :maxdepth: 1
-    :caption: Additional topics
+    :caption: Dive deeper
 
+    clock
     middlewares
+    decorators
     serializers
     services
+
+.. toctree::
+    :maxdepth: 1
+    :caption: References
+
     glossary
     integrations
 ```

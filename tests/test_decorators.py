@@ -17,9 +17,9 @@ def test_filter_time__no_filter(dt: datetime) -> None:
 
     @walnats.decorators.filter_time()
     def handler(event: datetime) -> None:
-        assert event == dt
         nonlocal called
         called = True
+        assert event == dt
 
     handler(dt)
     assert called
@@ -47,9 +47,10 @@ def test_filter_time(given: dict, dt: datetime, expected: bool) -> None:
     called = False
 
     @walnats.decorators.filter_time(**given)
-    def handler(dt: datetime) -> None:
+    def handler(event: datetime) -> None:
         nonlocal called
         called = True
+        assert event == dt
 
     handler(dt)
     assert called is expected

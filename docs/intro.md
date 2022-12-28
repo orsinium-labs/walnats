@@ -4,7 +4,7 @@ This page gives a high-level overview of how a walnats-project look like. It's o
 
 ## Overview
 
-Walnats is a Python library for writing *event-driven* services. Being event-driven means that when a service (*producer*) want to run some job in background, on schedule, or in another internal service, that service *emits* an *event*. The event tells other services that something happened in the system. Other services (*consumers*) may have one or multiple *actors* that *listen* to events and *handle* them in some way.
+Walnats is a Python library for writing *event-driven* services. Being event-driven means that when a service (*publisher*) wants to run some job in background, on schedule, or in another internal service, that service *emits* an *event*. The event tells other services that something happened in the system. Other services (*subscribers*) may have one or multiple *actors* that *listen* to events and *handle* them in some way.
 
 For example, your project may have a "users" service that emits "user-registered" event. And then "notifications" service may have a "send-email" actor that sends a welcome email to the newly registered user.
 
