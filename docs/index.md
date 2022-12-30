@@ -22,6 +22,7 @@
     :caption: Dive deeper
 
     clock
+    resp
     middlewares
     decorators
     serializers

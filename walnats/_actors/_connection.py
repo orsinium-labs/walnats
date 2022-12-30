@@ -33,6 +33,11 @@ class ConnectedActors:
 
     async def register(self) -> None:
         """Add nats consumers for actors.
+
+        ::
+
+            async with actors.connect() as conn:
+                await conn.register()
         """
         tasks = []
         for actor in self._actors:

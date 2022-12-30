@@ -40,6 +40,12 @@ class ConnectedEvents:
 
     async def register(self) -> None:
         """Create Nats JetStream streams for registered events.
+
+        ::
+
+            async with events.connect() as conn:
+                await conn.register()
+
         """
         assert self._events
         tasks = []
@@ -61,6 +67,10 @@ class ConnectedEvents:
         meta: CloudEvent | dict[str, str] | None = None,
     ) -> None:
         """Send an :class:`walnats.Event` into Nats. The event must be registered first.
+
+        ::
+
+            await conn.emit(USER_CREATED, user)
 
         Args:
             event: registered event to which the message belongs.
@@ -101,7 +111,7 @@ class ConnectedEvents:
         trace_id: str | None = None,
         delay: float | None = None,
         meta: CloudEvent | dict[str, str] | None = None,
-        timeout: float = 3,
+        timeout: float = 30,
     ) -> R:
         assert event in self._events
         payload = event.encode(message)
@@ -128,6 +138,15 @@ class ConnectedEvents:
 
         Events emitted while you don't listen won't be remembered.
         In other words, it's a live feed. Useful for debugging.
+
+        ::
+
+            async with events.connect() as conn:
+                with conn.monitor() as monitor:
+                    while True:
+                        msg = monitor.get()
+                        print(msg)
+
         """
         queue: asyncio.Queue[object] = asyncio.Queue()
         tasks: list[asyncio.Task] = []
