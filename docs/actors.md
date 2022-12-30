@@ -10,4 +10,6 @@
 
 ```{eval-rst}
 .. autoclass:: walnats.Actor
+.. autoclass:: walnats.Priority
+    :members:
 ```

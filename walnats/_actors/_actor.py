@@ -92,10 +92,12 @@ class Actor(Generic[T, R]):
             its turn, higher its priority gets.
 
     ::
+
         async def send_email(user: User) -> None:
             ...
 
         SEND_EMAIL = walnats.Actor('send-email', USER_CREATED, send_email)
+
     """
     name: str
     event: BaseEvent[T, R]
