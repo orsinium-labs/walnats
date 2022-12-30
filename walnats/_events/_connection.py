@@ -160,7 +160,7 @@ class ConnectedEvents:
             headers = meta.as_headers()
         if uid is not None:
             headers[HEADER_ID] = uid
-        elif isinstance(meta, CloudEvent) and meta.id:
+        elif isinstance(meta, CloudEvent):
             headers[HEADER_ID] = meta.id
         if trace_id is not None:
             headers[HEADER_TRACE] = trace_id

@@ -75,6 +75,12 @@ tasks:
         --deps=production
         --symlink
 
+  run-nats:
+    status:
+      - ps -ax | grep '[n]ats-server'
+    cmds:
+      - nats-server --jetstream
+
   pytest:
     desc: "run Python tests"
     deps:
