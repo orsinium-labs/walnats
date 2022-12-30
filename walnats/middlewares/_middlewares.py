@@ -24,6 +24,7 @@ class CurrentContextMiddleware(Middleware):
     """
     _context: ContextVar[Context] = field(
         default_factory=lambda: ContextVar('context'),
+        init=False,
     )
 
     @property

@@ -36,7 +36,7 @@ class ErrorThresholdMiddleware(Middleware):
     message_failures: int = 20
 
     _overall: int = 0
-    _per_actor: dict[str, int] = field(default_factory=dict)
+    _per_actor: dict[str, int] = field(default_factory=dict, init=False)
 
     def on_start(self, ctx: Context) -> Coroutine[None, None, None] | None:
         return self.middleware.on_start(ctx)
@@ -77,10 +77,13 @@ class FrequencyMiddleware(Middleware):
     middleware: Middleware
     timeframe: float = 600
 
-    _last_trigger_start: dict[str, float] = field(default_factory=dict)
-    _last_trigger_ok: dict[str, float] = field(default_factory=dict)
-    _last_trigger_err: dict[str, float] = field(default_factory=dict)
-    _reported_errors: dict[str, set[type[BaseException]]] = field(default_factory=dict)
+    _last_trigger_start: dict[str, float] = field(default_factory=dict, init=False)
+    _last_trigger_ok: dict[str, float] = field(default_factory=dict, init=False)
+    _last_trigger_err: dict[str, float] = field(default_factory=dict, init=False)
+    _reported_errors: dict[str, set[type[BaseException]]] = field(
+        default_factory=dict,
+        init=False,
+    )
 
     def on_start(self, ctx: Context) -> Coroutine[None, None, None] | None:
         actor_name = f'{ctx.actor.event.name}.{ctx.actor.name}'

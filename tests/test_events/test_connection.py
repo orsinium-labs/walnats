@@ -4,9 +4,10 @@ import asyncio
 from typing import Any
 
 import pytest
-from ..helpers import get_random_name
 
 import walnats
+
+from ..helpers import get_random_name
 
 
 async def test_events_monitor(event: walnats.Event):

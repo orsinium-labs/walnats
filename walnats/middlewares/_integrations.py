@@ -168,6 +168,7 @@ class ZipkinMiddleware(Middleware):
     sampled: bool | None = None
     _span: ContextVar[aiozipkin.SpanAbc | None] = field(
         default_factory=lambda: ContextVar('span', default=None),
+        init=False,
     )
 
     @property
@@ -206,6 +207,7 @@ class OpenTelemetryTraceMiddleware(Middleware):
     tracer: opentelemetry.trace.Tracer
     _span: ContextVar[opentelemetry.trace.Span | None] = field(
         default_factory=lambda: ContextVar('span', default=None),
+        init=False,
     )
 
     @property
