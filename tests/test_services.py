@@ -39,3 +39,59 @@ def test_d2__no_colors():
         users -> user-created: str
         user-created -> emails.send-email
     """).strip()
+
+
+def test_async_api() -> None:
+    s = walnats.Services()
+    e = walnats.Event('user-created', dict, description='event descr')
+    s.add('users', emits=walnats.Events(e))
+    s.add('emails', defines=walnats.Actors(walnats.Actor('send-email', e, noop)))
+
+    expected = {
+        'asyncapi': '2.5.0',
+        'info': {
+            'title': 'application',
+            'version': '0.0.0',
+        },
+        'channels': {
+            'user-created': {
+                'description': 'event descr',
+                'subscribe': {
+                    'message': {
+                        'name': 'dict',
+                        'payload': {'$ref': '#/components/schemas/dict'}
+                    },
+                },
+            },
+        },
+        'components': {
+            'schemas': {
+                'dict': {'type': 'object'},
+            },
+        },
+    }
+    assert s.get_async_api() == expected
+
+    expected_users = {
+        'asyncapi': '2.5.0',
+        'info': {
+            'title': 'users',
+            'version': '0.0.0',
+        },
+        'channels': expected['channels'],
+        'components': expected['components'],
+    }
+
+    expected_emails = {
+        'asyncapi': '2.5.0',
+        'info': {
+            'title': 'emails',
+            'version': '0.0.0',
+        },
+        'channels': {},
+        'components': {'schemas': {}},
+    }
+    specs = s.get_async_apis()
+    assert len(specs) == 2
+    assert specs[0] == expected_users
+    assert specs[1] == expected_emails
