@@ -21,6 +21,7 @@
     :maxdepth: 1
     :caption: Dive deeper
 
+    recipes
     clock
     resp
     middlewares

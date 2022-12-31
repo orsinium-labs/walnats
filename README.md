@@ -31,7 +31,7 @@ For example, when your webshop sends a parcel to a client, instead of directly c
 
 If you have a big distributed system, Walnats is for you. If all you want is to send emails in background from your Django monolith or a little hobby project, you might find another framework a better fit.
 
-Lastly, compared to you just taking [nats.py](https://github.com/nats-io/nats.py) and writing your service from scratch, Walnats will handle much better failures, high load, and corner-cases. Walnats is "designed for failure". Distributed systems are hard, and you shouldn't embark on this journey alone.
+Lastly, compared to you just taking [nats.py](https://github.com/nats-io/nats.py) and writing your service from scratch, Walnats does a better job at handling failures, load spikes, and corner-cases. Walnats is "[designed for failure](https://www.v-wiki.net/design-for-failure/)". Distributed systems are hard, and you shouldn't embark on this journey alone.
 
 ## Walnats in 30 seconds
 
