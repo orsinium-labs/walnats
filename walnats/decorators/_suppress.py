@@ -77,11 +77,7 @@ class suppress:
             try:
                 return await handler(event)
             except self._excs:
-                if self._logger is not None:
-                    self._logger.exception(
-                        'suppressed exception in handler',
-                        extra={'handler': handler.__name__},
-                    )
+                self._log(handler)
 
         return wrapper
 
@@ -99,11 +95,7 @@ class suppress:
             try:
                 result = handler(event)
             except self._excs:
-                if self._logger is not None:
-                    self._logger.exception(
-                        'suppressed exception in handler',
-                        extra={'handler': handler.__name__},
-                    )
+                self._log(handler)
                 return None
             if result is not None:
                 return self._wrap_awaitable(result, handler)
@@ -117,11 +109,14 @@ class suppress:
         handler: Callable[[E], Awaitable[None] | None],
     ) -> None:
         try:
-            return await awaitable
+            await awaitable
         except self._excs:
-            if self._logger is not None:
-                self._logger.exception(
-                    'suppressed exception in handler',
-                    extra={'handler': handler.__name__},
-                )
-            return None
+            self._log(handler)
+
+    def _log(self, handler: Callable) -> None:
+        if self._logger is not None:
+            self._logger.exception(
+                'suppressed exception in handler',
+                extra={'handler': handler.__name__},
+            )
+        return None
