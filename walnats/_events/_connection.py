@@ -38,20 +38,28 @@ class ConnectedEvents:
     _events: tuple[BaseEvent, ...]
     _now: Callable[[], float] = field(default=lambda: datetime.utcnow().timestamp())
 
-    async def register(self) -> None:
+    async def register(self, *, create: bool = True, update: bool = True) -> None:
         """Create Nats JetStream streams for registered events.
 
         ::
 
-            async with events.connect() as conn:
-                await conn.register()
+            await conn.register()
+
+        Args:
+            create: create the stream if doesn't exist yet.
+            update: update the stream if already exists.
+
+        Raises:
+            walnats.StreamExistsError: a stream with the same name already exists.
+            walnats.StreamConfigError: the changed configuration option cannot be updated.
+            nats.js.errors.APIError: there is an error communicating with Nats JetStream.
 
         """
         assert self._events
         tasks = []
         for event in self._events:
             task = asyncio.create_task(
-                event._add(self._js),
+                event._sync(self._js, create=create, update=update),
                 name=f'events/{event.name}/add',
             )
             tasks.append(task)
@@ -67,6 +75,8 @@ class ConnectedEvents:
         meta: CloudEvent | dict[str, str] | None = None,
     ) -> None:
         """Send an :class:`walnats.Event` into Nats. The event must be registered first.
+
+        The emitted event will be broadcast to all actors that are interested in it.
 
         ::
 
@@ -113,6 +123,17 @@ class ConnectedEvents:
         meta: CloudEvent | dict[str, str] | None = None,
         timeout: float = 30,
     ) -> R:
+        """Emit an event and wait for a response.
+
+        It is similar to :meth:`walnats.types.ConnectedEvents.emit`
+        (and accepts all the same arguments) except that it waits for a response
+        from an actor. The response is what actor's handler function has returned.
+
+        The ``timeout`` argument is how long to wait at most for the response.
+        Persistency (JetStream) is not used for responses, so the response can be lost.
+
+        If there are multiple responses, the first one arrived will be returned.
+        """
         assert event in self._events
         payload = event.encode(message)
         inbox = self._nc.new_inbox()

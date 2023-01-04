@@ -85,3 +85,60 @@ async def test_headers(
         await econ.emit(event, 'hi', **given)
         await acon.listen(burst=True)
     assert headers == expected
+
+
+@pytest.mark.parametrize('create', [True, False])
+@pytest.mark.parametrize('update', [True, False])
+async def test_register__twice_same_event(create, update):
+    name = get_random_name()
+    event = walnats.Event(name, str)
+    events = walnats.Events(event)
+    async with events.connect() as conn:
+        await conn.register()
+        await conn.register(create=create, update=update)
+
+
+@pytest.mark.parametrize('kwargs, raises', [
+    (dict(create=False, update=False), None),
+    (dict(create=True, update=False), walnats.StreamExistsError),
+    (dict(create=False, update=True), None),
+    (dict(create=True, update=True), None),
+])
+async def test_register__twice_can_update(kwargs, raises: type[Exception]):
+    name = get_random_name()
+    event = walnats.Event(name, str, limits=walnats.Limits(age=60))
+    events = walnats.Events(event)
+    async with events.connect() as conn:
+        await conn.register()
+
+    event = walnats.Event(name, str, limits=walnats.Limits(age=30))
+    events = walnats.Events(event)
+    async with events.connect() as conn:
+        if raises is None:
+            await conn.register(**kwargs)
+        else:
+            with pytest.raises(raises):
+                await conn.register(**kwargs)
+
+
+@pytest.mark.parametrize('kwargs, raises', [
+    (dict(create=False, update=False), None),
+    (dict(create=True, update=False), walnats.StreamExistsError),
+    (dict(create=False, update=True), walnats.StreamConfigError),
+    (dict(create=True, update=True), walnats.StreamConfigError),
+])
+async def test_register__twice_cannot_update(kwargs, raises: type[Exception]):
+    name = get_random_name()
+    event = walnats.Event(name, str, limits=walnats.Limits(consumers=10))
+    events = walnats.Events(event)
+    async with events.connect() as conn:
+        await conn.register()
+
+    event = walnats.Event(name, str, limits=walnats.Limits(consumers=20))
+    events = walnats.Events(event)
+    async with events.connect() as conn:
+        if raises is None:
+            await conn.register(**kwargs)
+        else:
+            with pytest.raises(raises):
+                await conn.register(**kwargs)

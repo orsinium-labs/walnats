@@ -6,7 +6,9 @@ from typing import Generic, TypeVar
 
 import nats
 import nats.js
+import nats.js.errors
 
+from .._errors import convert_errors
 from ..serializers import Serializer, get_serializer
 
 
@@ -63,6 +65,7 @@ class BaseEvent(Generic[T, R]):
 
         Walnats makes exactly one stream per subject.
         """
+        assert 0 < len(self.name) <= 255
         return self.name
 
     def encode(self, msg: T) -> bytes:
@@ -89,6 +92,7 @@ class BaseEvent(Generic[T, R]):
 
         https://docs.nats.io/nats-concepts/jetstream/streams#configuration
         """
+        assert self.description is None or len(self.description) <= 4 * 1024
         return nats.js.api.StreamConfig(
             name=self.stream_name,
             subjects=[self.subject_name],
@@ -103,12 +107,23 @@ class BaseEvent(Generic[T, R]):
             max_msg_size=self.limits.message_size,
         )
 
-    async def _add(self, js: nats.js.JetStreamContext) -> None:
+    async def _sync(
+        self,
+        js: nats.js.JetStreamContext,
+        create: bool,
+        update: bool,
+    ) -> None:
         """Add Nats JetStream stream.
 
         Must be called before any actors can be registered.
         """
-        await js.add_stream(self._stream_config)
+        if create:
+            with convert_errors(exists_ok=update):
+                await js.add_stream(self._stream_config)
+                return
+        if update:
+            with convert_errors():
+                await js.update_stream(self._stream_config)
 
     async def _monitor(self, nc: nats.NATS, queue: asyncio.Queue[T]) -> None:
         """Subscribe to the subject and emit all events into the given queue.

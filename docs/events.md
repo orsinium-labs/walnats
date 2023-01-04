@@ -57,6 +57,7 @@ Declaring events:
 + If you have non-Python microservices, consider also using some kind of event registry, like [eventcatalog](https://github.com/boyney123/eventcatalog) or [BSR](https://docs.buf.build/bsr/introduction), so that event definition (and especially schemas) are available for all services.
 + Use `SCREAMING_SNAKE_CASE` for the variable where the event is assigned. Events are immutable, and so can be considered constants.
 + When you add a new field in an existing event, provide the default value for it. It is possible that the actor expecting the field is deployed before the producer, or an old event emitted by an old producer arrives. Always keep in mind backward compatibility. Changing a service is atomic and can be done in one deployment, changing multiple services isn't.
++ Make sure that when you change the limits, {py:meth}`walntas.ConnectedEvents.register` is executed only in the latest version of your app. For example, if v1 of your service sets `max_age=60`, v2 sets `max_age=120`, and then so happened that v1 calls `register` afte v2 did that, v1 will negate the changes made by v1. To avoid the issue, call `register` only once at the application start and make sure that if the app is restarted, it will be replaced by the latest version.
 
 Which fields to include in the event schema:
 
