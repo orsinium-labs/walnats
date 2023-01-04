@@ -142,3 +142,19 @@ async def test_register__twice_cannot_update(kwargs, raises: type[Exception]):
         else:
             with pytest.raises(raises):
                 await conn.register(**kwargs)
+
+
+async def test_register__invalid_name():
+    event = walnats.Event('hello*world', str)
+    events = walnats.Events(event)
+    async with events.connect() as conn:
+        with pytest.raises(walnats.StreamConfigError):
+            await conn.register()
+
+
+async def test_register__negative_limit():
+    event = walnats.Event(get_random_name(), str, limits=walnats.Limits(age=-10))
+    events = walnats.Events(event)
+    async with events.connect() as conn:
+        with pytest.raises(walnats.StreamConfigError):
+            await conn.register()
