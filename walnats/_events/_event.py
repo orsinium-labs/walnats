@@ -8,7 +8,7 @@ import nats
 import nats.js
 import nats.js.errors
 
-from .._errors import convert_errors
+from .._errors import convert_stream_errors
 from ..serializers import Serializer, get_serializer
 
 
@@ -118,11 +118,11 @@ class BaseEvent(Generic[T, R]):
         Must be called before any actors can be registered.
         """
         if create:
-            with convert_errors(exists_ok=update):
+            with convert_stream_errors(exists_ok=update):
                 await js.add_stream(self._stream_config)
                 return
         if update:
-            with convert_errors():
+            with convert_stream_errors():
                 await js.update_stream(self._stream_config)
 
     async def _monitor(self, nc: nats.NATS, queue: asyncio.Queue[T]) -> None:

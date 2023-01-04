@@ -2,7 +2,7 @@
 """
 from . import decorators, middlewares, serializers, types
 from ._actors import Actor, Actors, Priority
-from ._errors import ConsumerExistsError, StreamConfigError, StreamExistsError
+from ._errors import StreamConfigError, StreamExistsError
 from ._events import Clock, CloudEvent, Event, Events, Limits
 from ._services import Services
 
@@ -21,7 +21,6 @@ __all__ = [
     'Services',
 
     # exceptions
-    'ConsumerExistsError',
     'StreamConfigError',
     'StreamExistsError',
 
