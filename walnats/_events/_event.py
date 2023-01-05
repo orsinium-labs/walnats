@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import dataclasses
+from functools import cached_property
 from typing import Generic, TypeVar
 
 import nats
@@ -41,7 +42,7 @@ class Limits:
         return dataclasses.replace(self, **kwargs)
 
 
-@dataclasses.dataclass
+@dataclasses.dataclass(frozen=True)
 class BaseEvent(Generic[T, R]):
     """
     Internal-only class to provide shared behavior for different kinds of events.
@@ -73,18 +74,20 @@ class BaseEvent(Generic[T, R]):
 
         Used by Events.emit to transfer events over the network.
         """
-        if self.serializer is None:
-            self.serializer = get_serializer(self.schema)
-        return self.serializer.encode(msg)
+        return self._serializer.encode(msg)
 
     def decode(self, data: bytes) -> T:
         """Convert raw bytes from event payload into a Python type.
 
         Used by Actor to extract the event message from Nats message payload.
         """
-        if self.serializer is None:
-            self.serializer = get_serializer(self.schema)
-        return self.serializer.decode(data)
+        return self._serializer.decode(data)
+
+    @cached_property
+    def _serializer(self) -> Serializer:
+        if self.serializer is not None:
+            return self.serializer
+        return get_serializer(self.schema)
 
     @property
     def _stream_config(self) -> nats.js.api.StreamConfig:
@@ -135,7 +138,7 @@ class BaseEvent(Generic[T, R]):
             await queue.put(event)
 
 
-@dataclasses.dataclass
+@dataclasses.dataclass(frozen=True)
 class EventWithResponse(BaseEvent[T, R]):
     response_schema: type[R] = ...  # type: ignore[assignment]
     response_serializer: Serializer[R] | None = None
@@ -145,9 +148,7 @@ class EventWithResponse(BaseEvent[T, R]):
 
         Used by :class:`walnats.Actor` to transfer the response over the network.
         """
-        if self.response_serializer is None:
-            self.response_serializer = get_serializer(self.response_schema)
-        return self.response_serializer.encode(msg)
+        return self._response_serializer.encode(msg)
 
     def decode_response(self, data: bytes) -> R:
         """Convert raw bytes from event payload into a Python type.
@@ -155,9 +156,13 @@ class EventWithResponse(BaseEvent[T, R]):
         Used by :class:`walnats.types.ConnectedEvents.request` to extract
         the response from Nats JetStream message payload.
         """
-        if self.response_serializer is None:
-            self.response_serializer = get_serializer(self.response_schema)
-        return self.response_serializer.decode(data)
+        return self._response_serializer.decode(data)
+
+    @cached_property
+    def _response_serializer(self) -> Serializer:
+        if self.response_serializer is not None:
+            return self.response_serializer
+        return get_serializer(self.response_schema)
 
 
 class Event(BaseEvent[T, None]):
