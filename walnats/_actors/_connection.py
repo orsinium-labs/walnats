@@ -81,8 +81,11 @@ class ConnectedActors:
                 if the handlers are IO-bound and use a lot of async/await.
             max_processes: if an Actor is configured to run in a process,
                 this is how many processes at most can be running at the same time.
+                Defaults to the number of processors on the machine.
             max_threads: if an Actor is configured to run in a thread,
                 this is how many threads at most can be running at the same time.
+                Defaults to the number of processors on the machine + 4
+                but at most 32.
         """
         assert max_polls is None or max_polls >= 1
         assert poll_delay >= 0

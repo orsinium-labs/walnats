@@ -35,6 +35,13 @@ logger = getLogger('walnats.actor')
 class Actor(Generic[T, R]):
     """A subscriber group that listens to a specific :class:`walnats.Event`.
 
+    ::
+
+        async def send_email(user: User) -> None:
+            ...
+
+        SEND_EMAIL = walnats.Actor('send-email', USER_CREATED, send_email)
+
     Args:
         name: the actor name. It is used as durable consumer name in Nats,
             and so must be unique per event and never change. If you ever change the name,
@@ -91,12 +98,13 @@ class Actor(Generic[T, R]):
             priority have a higher chance to get started earlier. Longer an actor waits
             its turn, higher its priority gets.
 
-    ::
+    The following options are submitted into Nats JetStream and so
+    cannot be ever changed after the actor is registered for the first time:
 
-        async def send_email(user: User) -> None:
-            ...
-
-        SEND_EMAIL = walnats.Actor('send-email', USER_CREATED, send_email)
+    * ``description``
+    * ``ack_wait``
+    * ``max_attempts``
+    * ``max_ack_pending``
 
     """
     name: str
