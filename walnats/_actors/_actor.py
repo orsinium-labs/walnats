@@ -244,7 +244,7 @@ class Actor(Generic[T, R]):
         if delay_str:
             delayed_until = float(delay_str)
             delay_left = delayed_until - self._now()
-            if delay_left > 1e-06:
+            if delay_left > 1e-03:
                 await msg.nak(delay=delay_left)
                 return
 

@@ -9,3 +9,7 @@ This page covers common usage patterns of walnats.
 ## Routing events based on a value
 
 ...
+
+## Global connection
+
+...

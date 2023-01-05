@@ -4,7 +4,7 @@ This page gives a high-level overview of how a walnats-project look like. It's o
 
 ## Overview
 
-Walnats is a Python library for writing *event-driven* services. Being event-driven means that when a service (*publisher*) wants to run some job in background, on schedule, or in another internal service, that service *emits* an *event*. The event tells other services that something happened in the system. Other services (*subscribers*) may have one or multiple *actors* that *listen* to events and *handle* them in some way.
+Walnats is a Python library for writing *event-driven* services. Being event-driven means that when a service (*producer* or *publisher*) wants to run some job in background, on schedule, or in another internal service, that service *emits* an *event*. The event tells other services that something happened in the system. Other services (*subscribers*) may have one or multiple *actors* that *listen* to events and *handle* them in some way.
 
 For example, your project may have a "users" service that emits "user-registered" event. And then "notifications" service may have a "send-email" actor that sends a welcome email to the newly registered user.
 
@@ -15,7 +15,7 @@ This decoupling is a very powerful idea that allows to scale services in a micro
 A typical walnats-based service consists of a few parts, each having its own name and serving a distinct purpose:
 
 1. A **schema** describes the type of data you want to send in the event. For example, it can be a pydantic model `User` that has fields `id: int` and `full_name: str`.
-1. An **event** ({py:class}`walnats.Event`) connects the event (identified by a name that is unique accross the system) to a schema. For example, we can say that `user-registered` event has a `User` schema of data. It allows us to ensure type safety for both the producer and the consumer.
+1. An **event** ({py:class}`walnats.Event`) connects the event (identified by a name that is unique accross the system) to a schema. For example, we can say that `user-registered` event has a `User` schema of data. It allows us to ensure type safety for both the publisher and the subscriber.
 1. A collection of **events** ({py:class}`walnats.Events`) is used to emit events.
 1. A **handler** is a function that gets called when an event happens. It gets called with a message (a value of the schema type, the event payload) and can do inside anything it needs to do.
 1. An **actor** ({py:class}`walnats.Actor`) connects a handler to an event. It makes sure to call the handler when an event occurs.
