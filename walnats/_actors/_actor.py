@@ -122,7 +122,7 @@ class Actor(Generic[T, R]):
     max_jobs: int = 16
     job_timeout: float = 32
     execute_in: Literal['thread', 'process'] | None = None
-    retry_delay: Sequence[float] = (1, 2, 4, 8)
+    retry_delay: Sequence[float] = (.5, 1, 2, 4)
     pulse: bool = True
     priority: Priority = Priority.NORMAL
 

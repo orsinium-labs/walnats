@@ -40,4 +40,6 @@ Walnats does its best to balanace the load between actors, but exact numbers and
 
 1. Keep in mind that your code can explode at any point, especially if you work a lot with external services and third-party APIs. Walnats will take care of retries, but it's on you to make sure nothing is left half-done in case of a failure ("Atomicity" part of [ACID](https://en.wikipedia.org/wiki/ACID)). For database queries, use a transaction. For network requests, keep them closer to the end and retry just the requests in case of failures. For file writes, write a temporary file first, and then copy it in the right place.
 1. Make sure to have a reasonable `ack_wait` value. Too high number means the event might arrive when nobody needs the result ([real-time system](https://en.wikipedia.org/wiki/Real-time_computing)). Too low value might mean that walnats didn't get enough time to send "in progress" pulse into Nats, and so the message was re-delivered to another instance of the actor while the first one haven't failed.
-1. ...
+1. The job may freeze. Make sure you specify timeouts for all network requests and the actor itself has a low enough `job_timeout` value.
+1. Some errors are caused by deterministic bugs, and so no amount of retries can fix them. Make sure to specify `max_attempts` for the actor and `limits` for the event.
+1. Make sure you have error reporting in place. Walnats provides out-of-the-box a middleware for Sentry ({py:class}`walnats.middlewares.SentryMiddleware`), but you can always write your own middleware for whatever service you use.
