@@ -38,4 +38,4 @@ Walnats does its best to balanace the load between actors, but exact numbers and
 
 ## Design for failure
 
-...
+* Keep in mind that your code can explode at any point, especially if you work a lot with external services and third-party APIs.

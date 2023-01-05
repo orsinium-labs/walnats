@@ -60,7 +60,7 @@ class ErrorThresholdMiddleware(Middleware):
         return None
 
 
-@dataclass
+@dataclass(frozen=True)
 class FrequencyMiddleware(Middleware):
     """Trigger middleware only once in the given timeframe.
 
