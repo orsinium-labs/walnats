@@ -44,7 +44,8 @@ USER_REGISTERED = walnats.Event(
 This is the reference of Limits with all limits you can set:
 
 ```{eval-rst}
-.. autoclass:: walnats.Limits
+.. autoclass:: walnats.Limits()
+    :members:
 ```
 
 ## Tips

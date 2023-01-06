@@ -5,7 +5,8 @@ You often will have tasks that you need to execute periodically (for instance, e
 Meet `walnats.Clock`. It's a worker that emits periodic events. To implement a periodic task, run the clock and subscribe to the event in any other place.
 
 ```{eval-rst}
-.. autoclass:: walnats.Clock
+.. autoclass:: walnats.Clock()
+    :members:
 ```
 
 ## Tips

@@ -38,26 +38,33 @@ class Clock:
             duration=5 * 60,
         )
 
-    Args:
-        event: the event to be emitted on each tick.
-        meta: headers to be included into the message,
-            same as ``meta`` argument of :meth:`walnats.types.ConnectedEvents.emit`.
-        period: how often (in seconds) events should be emitted.
-            The actual delta between event can fluctuate depending on when the async task
-            gets woke up by the scheduler and how long it takes to publish the event.
-            If, for some reason, the event can't be emitted before the time comes to emit
-            the next one, it won't be emitted.
-        now: callback that returns the current time. Useful for testing or black magic.
-
     It is safe to run multiple clocks on the same Nats instance,
     events will not be duplicated.
     """
+
     event: Event[datetime] = dataclasses.field(
         default_factory=lambda: Event('minute-passed', datetime),
     )
+    """
+    The event to be emitted on each tick.
+    """
+
     meta: dict[str, str] | None = None
+    """
+    Headers to be included into the message,
+    same as ``meta`` argument of :meth:`walnats.types.ConnectedEvents.emit`.
+    """
+
     period: int = 60
-    now: Callable[[], datetime] = datetime.now
+    """
+    How often (in seconds) events should be emitted.
+    The actual delta between event can fluctuate depending on when the async task
+    gets woke up by the scheduler and how long it takes to publish the event.
+    If, for some reason, the event can't be emitted before the time comes to emit
+    the next one, it won't be emitted.
+    """
+
+    _now: Callable[[], datetime] = datetime.now
 
     async def run(
         self,
@@ -87,7 +94,7 @@ class Clock:
     async def _wait(self) -> None:
         """Wait until the next minute +ε.
         """
-        now = self.now().timestamp()
+        now = self._now().timestamp()
         delay = self.period - (now % self.period) + .001
         await asyncio.sleep(delay)
 

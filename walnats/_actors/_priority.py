@@ -21,6 +21,7 @@ class Priority(Enum):
         )
 
     """
+
     HIGH = 0
     """Start as soon as possible."""
 

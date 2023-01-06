@@ -42,62 +42,6 @@ class Actor(Generic[T, R]):
 
         SEND_EMAIL = walnats.Actor('send-email', USER_CREATED, send_email)
 
-    Args:
-        name: the actor name. It is used as durable consumer name in Nats,
-            and so must be unique per event and never change. If you ever change the name,
-            a consumer with the old name will be left in Nats JetStream and will
-            accumulate events (until a limit is reached, and you should have Limits).
-        event: the event to listen to. Exactly one instance of the same Actor
-            will receive a message. That means, you can run the same actor multiple times
-            on different machines, and only one will receive a message. And not a single
-            message will be lost.
-        handler: the function to call when a message is received.
-        description: the actor description, will be attached to the consumer name in Nats.
-            Can be useful if you use observability tools for Nats.
-        ack_wait: how many seconds to wait from the last update before trying to
-            redeliver the message. Before calling the handler, a task will be started
-            that periodically sends a pulse into Nats saying that the job is in progress.
-            The pulse, hovewer, might not arrive in Nats if the network or machine dies
-            or something has blocked the scheduler for too long.
-        max_attempts: how many attempts Nats will make to deliver the message.
-            The message is redelivered if the handler fails to handle it.
-        max_ack_pending: how many messages can be in progress simultaneously
-            accross the whole system. If the limit is reached, delivery of messages
-            is suspended.
-        middlewares: callbacks that are triggered at different stages of message handling.
-            Most of the time, you'll need regular decorators instead. Middlewares are
-            useful when you need an additional context, like how many times the message
-            was redelivered. In particular, for logs, metrics, alerts.
-        max_jobs: how many jobs can be running simultaneously in this actor
-            on this machine. The best number depends on available resources and
-            the handler performance. Keep it low for slow handlers, keep it high for
-            highly concurrent handlers.
-        job_timeout: how long at most the handler execution can take for a single message.
-            If this timeout is reached, asyncio.CancelledError is raised in handler, and
-            then all the same things happen as for regular failure: on_failure hooks,
-            log message, nak. Doesn't do anything for sync jobs without `execute_in`
-            specified.
-        execute_in: set it to run the handler in a thread or in a process.
-            Use threads for slow IO-bound non-async/await handlers.
-            Use processes for slow CPU-bound handlers.
-            For running in a process, the handler and the message must be pickle-able.
-            If ``execute_in`` is set, the handler must be non-async/await.
-        retry_delay: a sequence of delays (in seconds) for each retry.
-            If the attempt number is higher than the sequence len, the las item (-1)
-            will be used. The default value is `(1, 2, 4, 8)`, so third retry will be 4s,
-            5th will be 8s, and 12th will still be 8.
-            The delay is used only when the message is explicitly nak'ed. If instead
-            the whole instance explodes or there is a network issue, the message
-            will be redelivered as soon as `ack_wait` is reached.
-        pulse: keep sending pulse into Nats JetStream while processing the message.
-            The pulse signal makes sure that the message won't be redelivered to another
-            instance of actor while this one is in progress. Disabling the pulse will
-            prevent the message being stuck if a handler stucks, but that also means
-            the message must be processed faster that `ack_wait`.
-        priority: priority of the actor compared to other actors. Actors with a higher
-            priority have a higher chance to get started earlier. Longer an actor waits
-            its turn, higher its priority gets.
-
     The following options are submitted into Nats JetStream and so
     cannot be ever changed after the actor is registered for the first time:
 
@@ -107,24 +51,117 @@ class Actor(Generic[T, R]):
     * ``max_ack_pending``
 
     """
+
     name: str
+    """
+    The actor name. It is used as durable consumer name in Nats,
+    and so must be unique per event and never change. If you ever change the name,
+    a consumer with the old name will be left in Nats JetStream and will
+    accumulate events (until a limit is reached, and you should have Limits).
+    """
+
     event: BaseEvent[T, R]
+    """
+    The event to listen to. Exactly one instance of the same Actor
+    will receive a message. That means, you can run the same actor multiple times
+    on different machines, and only one will receive a message. And not a single
+    message will be lost.
+    """
+
     handler: Callable[[T], Awaitable[R] | R]
+    """
+    The function to call when a message is received.
+    """
 
     # settings for the nats consumer
+
     description: str | None = None
+    """
+    The actor description, will be attached to the consumer name in Nats.
+    Can be useful if you use observability tools for Nats.
+    """
     ack_wait: float = 16
+    """
+    How many seconds to wait from the last update before trying to
+    redeliver the message. Before calling the handler, a task will be started
+    that periodically sends a pulse into Nats saying that the job is in progress.
+    The pulse, hovewer, might not arrive in Nats if the network or machine dies
+    or something has blocked the scheduler for too long.
+    """
+
     max_attempts: int | None = None
+    """
+    How many attempts Nats will make to deliver the message.
+    The message is redelivered if the handler fails to handle it.
+    """
+
     max_ack_pending: int = 1000
+    """
+    How many messages can be in progress simultaneously accross the whole system.
+    If the limit is reached, delivery of messages is suspended.
+    """
 
     # settings for local job processing
+
     middlewares: tuple[Middleware, ...] = ()
+    """
+    Callbacks that are triggered at different stages of message handling.
+    Most of the time, you'll need regular decorators instead. Middlewares are
+    useful when you need an additional context, like how many times the message
+    was redelivered. In particular, for logs, metrics, alerts.
+    """
+
     max_jobs: int = 16
+    """
+    How many jobs can be running simultaneously in this actor on this machine.
+    The best number depends on available resources and the handler performance.
+    Keep it low for slow handlers, keep it high for highly concurrent handlers.
+    """
+
     job_timeout: float = 32
+    """
+    How long at most the handler execution can take for a single message.
+    If this timeout is reached, asyncio.CancelledError is raised in handler, and
+    then all the same things happen as for regular failure: on_failure hooks,
+    log message, nak. Doesn't do anything for sync jobs without `execute_in` specified.
+    """
+
     execute_in: Literal['thread', 'process'] | None = None
+    """
+    Set it to run the handler in a thread or in a process.
+    Use threads for slow IO-bound non-async/await handlers.
+    Use processes for slow CPU-bound handlers.
+    For running in a process, the handler and the message must be pickle'able.
+    If ``execute_in`` is set, the handler must be non-async/await.
+    """
+
     retry_delay: Sequence[float] = (.5, 1, 2, 4)
+    """
+    A sequence of delays (in seconds) for each retry.
+    If the attempt number is higher than the sequence len, the las item (-1)
+    will be used. The default value is `(1, 2, 4, 8)`, so third retry will be 4s,
+    5th will be 8s, and 12th will still be 8.
+
+    The delay is used only when the message is explicitly nak'ed. If instead
+    the whole instance explodes or there is a network issue, the message
+    will be redelivered as soon as `ack_wait` is reached.
+    """
+
     pulse: bool = True
+    """
+    Keep sending pulse into Nats JetStream while processing the message.
+    The pulse signal makes sure that the message won't be redelivered to another
+    instance of actor while this one is in progress. Disabling the pulse will
+    prevent the message being stuck if a handler stucks, but that also means
+    the message must be processed faster that `ack_wait`.
+    """
+
     priority: Priority = Priority.NORMAL
+    """
+    Priority of the actor compared to other actors. Actors with a higher
+    priority have a higher chance to get started earlier. Longer an actor waits
+    its turn, higher its priority gets.
+    """
 
     _now: Callable[[], float] = field(default=lambda: datetime.utcnow().timestamp())
 
@@ -252,7 +289,7 @@ class Actor(Generic[T, R]):
         if delay_str:
             delayed_until = float(delay_str)
             delay_left = delayed_until - self._now()
-            if delay_left > 1e-03:
+            if delay_left > .001:
                 await msg.nak(delay=delay_left)
                 return
 

@@ -26,6 +26,6 @@ Are you looking for an API documentation for a specific class or module? If can 
 
 ## Modules
 
-+ [walnats.decorators](decorators)
-+ [walnats.serializers](serializers)
-+ [walnats.middlewares](middlewares)
++ [walnats.decorators](./decorators)
++ [walnats.serializers](./serializers)
++ [walnats.middlewares](./middlewares)

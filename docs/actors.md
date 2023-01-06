@@ -28,7 +28,8 @@ That's all you need to get started. Below are the API docs covering different co
 ## API
 
 ```{eval-rst}
-.. autoclass:: walnats.Actor
+.. autoclass:: walnats.Actor()
+    :members:
 .. autoclass:: walnats.Priority
     :members:
 ```

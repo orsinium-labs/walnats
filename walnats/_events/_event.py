@@ -21,20 +21,23 @@ R = TypeVar('R')
 class Limits:
     """Stream configuration options limiting the Stream size.
 
-    Args:
-        age: Maximum age of any message in the Stream in seconds.
-        consumers: How many Consumers can be defined for a given Stream.
-        messages: How many messages may be in a Stream.
-        bytes: How many bytes the Stream may contain.
-        message_size: The largest message that will be accepted by the Stream.
-
     https://docs.nats.io/nats-concepts/jetstream/streams#configuration
     """
+
     age: float | None = None
+    """Maximum age of any message in the Stream in seconds."""
+
     consumers: int | None = None
+    """How many Consumers can be defined for a given Stream."""
+
     messages: int | None = None
+    """How many messages may be in a Stream."""
+
     bytes: int | None = None
+    """How many bytes the Stream may contain."""
+
     message_size: int | None = None
+    """The largest message that will be accepted by the Stream."""
 
     def evolve(self, **kwargs: float | None) -> Limits:
         """Create a copy of Limits with the given fields changed.
@@ -168,11 +171,11 @@ class EventWithResponse(BaseEvent[T, R]):
 class Event(BaseEvent[T, None]):
     """Container for information about event: stream config, schema, serializer.
 
-    Args:
-        schema: Python type of the data transmitted. For example, dict, pydantic
-            model, dataclass, protobuf message, etc.
+    Attributes:
         name: The event name, used for stream and subject names in Nats.
             Choose carefully, you cannot ever change it.
+        schema: Python type of the data transmitted. For example, dict, pydantic
+            model, dataclass, protobuf message, etc.
         serializer: Serializer instance that can turn a schema instance into bytes and
             back again. By default, a serializer from the built-in ones will be picked.
             In most of the cases, it will produce JSON.
@@ -193,7 +196,7 @@ class Event(BaseEvent[T, None]):
         Create a copy of the Event that can be used with
         :meth:`walnats.types.ConnectedEvents.request`.
 
-        The same copy must be used with the :class:`walnats:Actor`.
+        The same copy must be used with the :class:`walnats.Actor`.
         Otherwise, the response won't be emitted.
         """
         return EventWithResponse(
