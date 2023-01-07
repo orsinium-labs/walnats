@@ -145,7 +145,7 @@ async def test_register__twice_cannot_update(kwargs, raises: type[Exception]):
 
 
 async def test_register__invalid_name():
-    event = walnats.Event('hello*world', str)
+    event = walnats.Event('hello*world', str)  # noqa: WNS003
     events = walnats.Events(event)
     async with events.connect() as conn:
         with pytest.raises(walnats.StreamConfigError):

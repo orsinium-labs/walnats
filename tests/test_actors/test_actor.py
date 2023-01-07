@@ -110,6 +110,6 @@ async def test_delay() -> None:
     ([4, 5, 6], 13, 6),
 ])
 def test_get_nak_delay(delays, attempt, expected):
-    e = walnats.Event('', str)
-    a = walnats.Actor('', e, lambda _: None, retry_delay=delays)
+    e = walnats.Event('e', str)
+    a = walnats.Actor('a', e, lambda _: None, retry_delay=delays)
     assert a._get_nak_delay(attempt) == expected

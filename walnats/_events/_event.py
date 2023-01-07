@@ -96,7 +96,7 @@ class BaseEvent(Generic[T, R]):
         Walnats makes exactly one stream per subject.
         """
         assert 0 < len(self.name) <= 255
-        return self.name
+        return self.name.replace('.', '-')
 
     def encode(self, msg: T) -> bytes:
         """Convert an event payload into bytes.
