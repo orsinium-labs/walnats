@@ -31,6 +31,7 @@ TEST_CASES = [
     123,
     123.45,
     True,
+    None,
     ['hello', 'world'],
     {'hello': 'world'},
     datetime.date.today(),

@@ -130,6 +130,8 @@ class PrimitiveSerializer(Serializer[object]):
         # and let the user convert the message type. Otherwise, we won't get type safety.
         if issubclass(schema, (str, int, float, list, dict, bool)):
             return cls(schema)
+        if schema is None or issubclass(schema, type(None)):
+            return cls(schema)
         return None
 
     def encode(self, message: object) -> bytes:
