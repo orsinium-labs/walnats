@@ -21,6 +21,11 @@ MESSAGES = MappingProxyType({
     3: 'event name has invalid symbols',
     4: 'event name should use kebab-case',
 
-    10: 'must be a positive number',
-    11: 'age must be in seconds',
+    11: 'limit must be positive',
+    12: 'age must be in seconds',
+
+    21: 'actor name is empty',
+    22: 'actor name is too long',
+    23: 'actor name has invalid symbols',
+    24: 'actor name should use kebab-case',
 })

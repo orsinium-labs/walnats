@@ -12,7 +12,7 @@ async def print_counter(event: CounterModel) -> None:
 
 async def run_subscriber() -> None:
     registry = walnats.Actors(
-        walnats.Actor('print_counter', COUNTER, print_counter),
+        walnats.Actor('print-counter', COUNTER, print_counter),
     )
     async with registry.connect() as conn:
         await conn.register()

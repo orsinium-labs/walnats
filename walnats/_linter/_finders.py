@@ -16,6 +16,8 @@ def get_violations(tree: ast.AST) -> Iterator[Violation]:
             name = _get_class_name(node.func)
             if name == 'Event':
                 yield from _check_event(node)
+            if name == 'Actor':
+                yield from _check_actor(node)
             if name == 'Limits':
                 yield from _check_limits(node)
 
@@ -39,12 +41,26 @@ def _check_limits(node: ast.Call) -> Iterator[Violation]:
     for index, name in enumerate(names):
         arg_node = _get_arg(node, index, name)
         if isinstance(arg_node, ast.UnaryOp):  # negative number, supposedly
-            yield Violation(arg_node, 10)
+            yield Violation(arg_node, 11)
 
     age_node = _get_arg(node, 0, 'age')
     if isinstance(age_node, ast.Constant) and isinstance(age_node.value, (float, int)):
         if age_node.value >= 1e9:
-            yield Violation(age_node, 11)
+            yield Violation(age_node, 12)
+
+
+def _check_actor(node: ast.Call) -> Iterator[Violation]:
+    name_node = _get_arg(node, 0, 'name')
+    if isinstance(name_node, ast.Constant) and isinstance(name_node.value, str):
+        name = name_node.value
+        if not name:
+            yield Violation(name_node, 21)
+        if len(name) > 64:  # nats allows more, but let's keep it sane
+            yield Violation(name_node, 22)
+        if set(name) & set(' \t\r\n\f.*>'):
+            yield Violation(name_node, 23)
+        elif not REX_KEBAB.fullmatch(name):
+            yield Violation(name_node, 24)
 
 
 def _get_class_name(node: ast.expr) -> str | None:

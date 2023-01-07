@@ -155,7 +155,7 @@ async def test_register__invalid_name():
 async def test_register__negative_limit():
     event = walnats.Event(
         get_random_name(), str,
-        limits=walnats.Limits(age=-10),  # noqa: WNS010
+        limits=walnats.Limits(age=-10),  # noqa: WNS011
     )
     events = walnats.Events(event)
     async with events.connect() as conn:

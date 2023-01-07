@@ -19,20 +19,28 @@ from walnats._linter import Flake8Checker
     ('Event("")', None),
     ('walnats.Event(garbage="")', None),
 
-    # validate name
+    # validate event name
     ('walnats.Event("")', 'WNS001 event name is empty'),
     ('walnats.Event(name="")', 'WNS001 event name is empty'),
     ('walnats.Event("' + 'a' * 80 + '")', 'WNS002 event name is too long'),
     ('walnats.Event("hi there")', 'WNS003 event name has invalid symbols'),
     ('walnats.Event("Hi")', 'WNS004 event name should use kebab-case'),
 
+    # vlaidate limits
     ('walnats.Limits(12)', None),
     ('walnats.Limits(age=12)', None),
-    ('walnats.Limits(-12)', 'WNS010 must be a positive number'),
-    ('walnats.Limits(age=-12)', 'WNS010 must be a positive number'),
-    ('walnats.Limits(age=1e9)', 'WNS011 age must be in seconds'),
-    ('walnats.Limits(age=1e10)', 'WNS011 age must be in seconds'),
-    ('walnats.Limits(age=10000000000)', 'WNS011 age must be in seconds'),
+    ('walnats.Limits(-12)', 'WNS011 limit must be positive'),
+    ('walnats.Limits(age=-12)', 'WNS011 limit must be positive'),
+    ('walnats.Limits(age=1e9)', 'WNS012 age must be in seconds'),
+    ('walnats.Limits(age=1e10)', 'WNS012 age must be in seconds'),
+    ('walnats.Limits(age=10000000000)', 'WNS012 age must be in seconds'),
+
+    # validate actor name
+    ('walnats.Actor("")', 'WNS021 actor name is empty'),
+    ('walnats.Actor(name="")', 'WNS021 actor name is empty'),
+    ('walnats.Actor("' + 'a' * 80 + '")', 'WNS022 actor name is too long'),
+    ('walnats.Actor("hi there")', 'WNS023 actor name has invalid symbols'),
+    ('walnats.Actor("Hi")', 'WNS024 actor name should use kebab-case'),
 
 ])
 def test_linter(given: str, expected: str | list | None):
