@@ -16,6 +16,8 @@ def get_violations(tree: ast.AST) -> Iterator[Violation]:
             name = _get_class_name(node.func)
             if name == 'Event':
                 yield from _check_event(node)
+            if name == 'Limits':
+                yield from _check_limits(node)
 
 
 def _check_event(node: ast.Call) -> Iterator[Violation]:
@@ -30,6 +32,19 @@ def _check_event(node: ast.Call) -> Iterator[Violation]:
             yield Violation(name_node, 3)
         elif not REX_KEBAB.fullmatch(name):
             yield Violation(name_node, 4)
+
+
+def _check_limits(node: ast.Call) -> Iterator[Violation]:
+    names = ('age', 'consumers', 'messages', 'bytes', 'message_size')
+    for index, name in enumerate(names):
+        arg_node = _get_arg(node, index, name)
+        if isinstance(arg_node, ast.UnaryOp):  # negative number, supposedly
+            yield Violation(arg_node, 10)
+
+    age_node = _get_arg(node, 0, 'age')
+    if isinstance(age_node, ast.Constant) and isinstance(age_node.value, (float, int)):
+        if age_node.value >= 1e9:
+            yield Violation(age_node, 11)
 
 
 def _get_class_name(node: ast.expr) -> str | None:
