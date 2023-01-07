@@ -70,6 +70,14 @@ def _check_actor(node: ast.Call) -> Iterator[Violation]:
         elif not REX_KEBAB.fullmatch(name):
             yield Violation(name_node, 24)
 
+    descr_node = _get_arg(node, 3, 'description')
+    if isinstance(descr_node, ast.Constant) and isinstance(descr_node.value, str):
+        descr = descr_node.value
+        if not descr:
+            yield Violation(descr_node, 25)
+        if len(descr) > 4 * 1024:
+            yield Violation(descr_node, 26)
+
 
 def _get_class_name(node: ast.expr) -> str | None:
     if not isinstance(node, ast.Attribute):

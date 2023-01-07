@@ -80,6 +80,7 @@ class Actor(Generic[T, R]):
     The actor description, will be attached to the consumer name in Nats.
     Can be useful if you use observability tools for Nats.
     """
+
     ack_wait: float = 16
     """
     How many seconds to wait from the last update before trying to

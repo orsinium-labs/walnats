@@ -30,4 +30,6 @@ MESSAGES = MappingProxyType({
     22: 'actor name is too long',
     23: 'actor name has invalid symbols',
     24: 'actor name should use kebab-case',
+    25: 'actor description is empty',
+    26: 'actor description is too long',
 })

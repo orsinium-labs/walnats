@@ -52,6 +52,15 @@ from walnats._linter import Flake8Checker
     ('walnats.Actor("hi there")', 'WNS023 actor name has invalid symbols'),
     ('walnats.Actor("Hi")', 'WNS024 actor name should use kebab-case'),
 
+
+    # validate actor (other args)
+    ('walnats.Actor(description="oh hi mark")', None),
+    ('walnats.Actor(description="")', 'WNS025 actor description is empty'),
+    (
+        'walnats.Actor(description="' + 'a' * 6000 + '")',
+        'WNS026 actor description is too long',
+    ),
+
 ])
 def test_linter(given: str, expected: str | list | None):
     tree = ast.parse(given)
