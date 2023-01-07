@@ -88,7 +88,7 @@ addopts = [
     "--cov=walnats",
     "--cov-report=html",
     "--cov-report=term-missing:skip-covered",
-    "--cov-fail-under=95",
+    "--cov-fail-under=96",
 ]
 asyncio_mode = "auto"
 
