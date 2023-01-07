@@ -26,7 +26,16 @@ from walnats._linter import Flake8Checker
     ('walnats.Event("hi there")', 'WNS003 event name has invalid symbols'),
     ('walnats.Event("Hi")', 'WNS004 event name should use kebab-case'),
 
+    # validate event (other args)
+    ('walnats.Event(description="oh hi mark")', None),
+    ('walnats.Event(description="")', 'WNS005 event description is empty'),
+    (
+        'walnats.Event(description="' + 'a' * 6000 + '")',
+        'WNS006 event description is too long',
+    ),
+
     # vlaidate limits
+    ('walnats.Limits()', None),
     ('walnats.Limits(12)', None),
     ('walnats.Limits(age=12)', None),
     ('walnats.Limits(-12)', 'WNS011 limit must be positive'),
@@ -36,6 +45,7 @@ from walnats._linter import Flake8Checker
     ('walnats.Limits(age=10000000000)', 'WNS012 age must be in seconds'),
 
     # validate actor name
+    ('walnats.Actor()', None),
     ('walnats.Actor("")', 'WNS021 actor name is empty'),
     ('walnats.Actor(name="")', 'WNS021 actor name is empty'),
     ('walnats.Actor("' + 'a' * 80 + '")', 'WNS022 actor name is too long'),

@@ -35,6 +35,14 @@ def _check_event(node: ast.Call) -> Iterator[Violation]:
         elif not REX_KEBAB.fullmatch(name):
             yield Violation(name_node, 4)
 
+    descr_node = _get_arg(node, 3, 'description')
+    if isinstance(descr_node, ast.Constant) and isinstance(descr_node.value, str):
+        descr = descr_node.value
+        if not descr:
+            yield Violation(descr_node, 5)
+        if len(descr) > 4 * 1024:
+            yield Violation(descr_node, 6)
+
 
 def _check_limits(node: ast.Call) -> Iterator[Violation]:
     names = ('age', 'consumers', 'messages', 'bytes', 'message_size')
