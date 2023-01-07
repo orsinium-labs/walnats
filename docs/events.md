@@ -49,6 +49,15 @@ This is the reference of Limits with all limits you can set:
     :members:
 ```
 
+## Exceptions
+
+```{eval-rst}
+.. autoexception:: walnats.StreamConfigError()
+    :show-inheritance:
+.. autoexception:: walnats.StreamExistsError()
+    :show-inheritance:
+```
+
 ## Tips
 
 Declaring events:

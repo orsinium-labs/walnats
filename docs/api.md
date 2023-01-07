@@ -16,13 +16,18 @@ Are you looking for an API documentation for a specific class or module? If can 
 
 ## Private classes
 
-+ {py:class}`walnats.types.BaseEvent`
++ {py:class}`walnats.types.BaseEvent` (undocumented)
 + {py:class}`walnats.types.ConnectedActors`
 + {py:class}`walnats.types.ConnectedEvents`
 + {py:class}`walnats.types.Context`
 + {py:class}`walnats.types.ErrorContext`
 + {py:class}`walnats.types.EventWithResponse`
 + {py:class}`walnats.types.OkContext`
+
+## Exceptions
+
++ {py:exc}`walnats.StreamConfigError`
++ {py:exc}`walnats.StreamExistsError`
 
 ## Modules
 
