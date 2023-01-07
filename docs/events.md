@@ -26,7 +26,8 @@ USER_REGISTERED = walnats.Event('user-registered', User)
 If you're curious, this is the full reference for the Event class:
 
 ```{eval-rst}
-.. autoclass:: walnats.Event
+.. autoclass:: walnats.Event()
+    :members: name, schema, serializer, description, limits, subject_name, stream_name
 ```
 
 ## Limit events

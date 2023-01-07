@@ -21,6 +21,8 @@ R = TypeVar('R')
 class Limits:
     """Stream configuration options limiting the Stream size.
 
+    When any of the limits is reached, Nats will drop old messages to fit into the limit.
+
     https://docs.nats.io/nats-concepts/jetstream/streams#configuration
     """
 
@@ -51,11 +53,35 @@ class BaseEvent(Generic[T, R]):
     Internal-only class to provide shared behavior for different kinds of events.
     Use :class:`walnats.Event` and its methods to create an event.
     """
+
     name: str
+    """
+    The event name, used for stream and subject names in Nats.
+    Choose carefully, you cannot ever change it.
+    """
+
     schema: type[T]
+    """
+    Python type of the data transmitted. For example, dict, pydantic model,
+    dataclass, protobuf message, etc.
+    """
+
     serializer: Serializer[T] | None = None
+    """
+    Serializer instance that can turn a schema instance into bytes and back again.
+    By default, a serializer from the built-in ones will be picked.
+    In most of the cases, it will produce JSON.
+    """
+
     description: str | None = None
+    """
+    Event description, will be shown in stream description in Nats.
+    """
+
     limits: Limits = Limits()
+    """
+    Limits for messages in the Nats stream (like size, age, number).
+    """
 
     @property
     def subject_name(self) -> str:
@@ -170,17 +196,6 @@ class EventWithResponse(BaseEvent[T, R]):
 
 class Event(BaseEvent[T, None]):
     """Container for information about event: stream config, schema, serializer.
-
-    Attributes:
-        name: The event name, used for stream and subject names in Nats.
-            Choose carefully, you cannot ever change it.
-        schema: Python type of the data transmitted. For example, dict, pydantic
-            model, dataclass, protobuf message, etc.
-        serializer: Serializer instance that can turn a schema instance into bytes and
-            back again. By default, a serializer from the built-in ones will be picked.
-            In most of the cases, it will produce JSON.
-        description: Event description, will be shown in stream description in Nats.
-        limits: Limits for messages in the Nats stream: size, age, number.
 
     ::
 
