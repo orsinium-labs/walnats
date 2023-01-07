@@ -98,7 +98,7 @@ class Actor(Generic[T, R]):
 
     max_ack_pending: int = 1000
     """
-    How many messages can be in progress simultaneously accross the whole system.
+    How many messages can be in progress simultaneously across the whole system.
     If the limit is reached, delivery of messages is suspended.
     """
 
@@ -110,6 +110,7 @@ class Actor(Generic[T, R]):
     Most of the time, you'll need regular decorators instead. Middlewares are
     useful when you need an additional context, like how many times the message
     was redelivered. In particular, for logs, metrics, alerts.
+    Middlewares cannot be used for flow control.
     """
 
     max_jobs: int = 16

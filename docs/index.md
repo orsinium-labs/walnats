@@ -28,6 +28,7 @@
     decorators
     serializers
     services
+    linter
 
 .. toctree::
     :maxdepth: 1

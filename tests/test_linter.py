@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 import ast
+from pathlib import Path
 
 import pytest
 
 from walnats._linter import Flake8Checker
+from walnats._linter._violation import MESSAGES
 
 
 @pytest.mark.parametrize('given, expected', [
@@ -74,3 +76,12 @@ def test_linter(given: str, expected: str | list | None):
         if isinstance(expected, str):
             expected = [expected]
         assert messages == expected
+
+
+DOCS = (Path(__file__).parent.parent / 'docs' / 'linter.md').read_text()
+
+
+@pytest.mark.parametrize('code, message', MESSAGES.items())
+def test_docs(code, message):
+    assert f'WNS0{code:02}' in DOCS
+    assert message in DOCS
