@@ -58,12 +58,6 @@ This is the reference of Limits with all limits you can set:
     :show-inheritance:
 ```
 
-## Designing for failure
-
-+ **Outbox**.
-+ **Transactions**.
-+ **Deduplication**.
-
 ## Tips
 
 Declaring events:

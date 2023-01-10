@@ -4,6 +4,7 @@ import asyncio
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from datetime import datetime
+from logging import getLogger
 from typing import Callable, Iterator, TypeVar
 
 import nats
@@ -16,6 +17,7 @@ from ._event import BaseEvent, Event, EventWithResponse
 
 T = TypeVar('T')
 R = TypeVar('R')
+logger = getLogger(__package__)
 
 
 @dataclass(frozen=True)
@@ -69,10 +71,12 @@ class ConnectedEvents:
         self,
         event: Event[T],
         message: T,
+        *,
         uid: str | None = None,
         trace_id: str | None = None,
         delay: float | None = None,
         meta: CloudEvent | dict[str, str] | None = None,
+        sync: bool = False,
     ) -> None:
         """Send an :class:`walnats.Event` into Nats. The event must be registered first.
 
@@ -101,6 +105,20 @@ class ConnectedEvents:
                 CloudEvents spec. Keep in mind that the spec for Nats is still WIP.
                 This meta information doesn't get into the handler but can be used
                 by middlewares or third-party tools.
+            sync: make sure that the event is delivered into Nats JetStream.
+                Turn it on when the message is very important.
+                Keep it off for better performance or when the producer can't handle
+                failures at the time when message is emitted (for example, after you've
+                already sent a POST request to a third-party API).
+
+        Raises:
+            nats.errors.ConnectionClosedError: The connection is already closed.
+                An unlikely error that can happen if you passed a Nats connection
+                into :meth:`walnats.Events.connect` and then closed that connection.
+            nats.errors.OutboundBufferLimitError: The connection to Nats server is lost,
+                and the ``pending_size`` limit of the Nats connection is reached.
+            nats.errors.MaxPayloadError: Size of the binary payload
+                of the message is too big. The default is 1 Mb.
         """
         assert event in self._events
         payload = event.encode(message)
@@ -111,17 +129,23 @@ class ConnectedEvents:
             meta=meta,
             reply=None,
         )
-        await self._nc.publish(event.subject_name, payload, headers=headers or None)
+        if sync:
+            ack = await self._js.publish(event.subject_name, payload, headers=headers)
+            if ack.duplicate:
+                logger.debug('duplicate message', extra={'event': event.name, 'uid': uid})
+        else:
+            await self._nc.publish(event.subject_name, payload, headers=headers or None)
 
     async def request(
         self,
         event: EventWithResponse[T, R],
         message: T,
+        *,
         uid: str | None = None,
         trace_id: str | None = None,
         delay: float | None = None,
         meta: CloudEvent | dict[str, str] | None = None,
-        timeout: float = 30,
+        timeout: float = 4,
     ) -> R:
         """Emit an event and wait for a response.
 
@@ -146,7 +170,7 @@ class ConnectedEvents:
         )
         sub = await self._nc.subscribe(inbox)
         try:
-            await self._nc.publish(event.subject_name, payload, headers=headers)
+            await self._js.publish(event.subject_name, payload, headers=headers)
             msg = await sub.next_msg(timeout=timeout)
         finally:
             await sub.unsubscribe()
