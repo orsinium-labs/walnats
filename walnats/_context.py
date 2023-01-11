@@ -16,6 +16,11 @@ if TYPE_CHECKING:
 
 
 @dataclass(frozen=True)
+class BaseContext:
+    ...
+
+
+@dataclass(frozen=True)
 class Context:
     """Base context, passed into :meth:`walnats.middlewares.Middleware.on_start` callback.
 

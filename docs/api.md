@@ -11,7 +11,6 @@ Are you looking for an API documentation for a specific class or module? If can 
 + {py:class}`walnats.Event`
 + {py:class}`walnats.Events`
 + {py:class}`walnats.Limits`
-+ {py:class}`walnats.Priority`
 + {py:class}`walnats.Services`
 
 ## Private classes
@@ -23,6 +22,11 @@ Are you looking for an API documentation for a specific class or module? If can 
 + {py:class}`walnats.types.ErrorContext`
 + {py:class}`walnats.types.EventWithResponse`
 + {py:class}`walnats.types.OkContext`
+
+## Enums
+
++ {py:class}`walnats.ExecuteIn`
++ {py:class}`walnats.Priority`
 
 ## Exceptions
 

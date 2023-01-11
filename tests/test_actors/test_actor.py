@@ -52,7 +52,10 @@ async def test_run_in_process_pool() -> None:
     e = walnats.Event(get_random_name(), str)
     with duration_between(.1, .4):
         await run_burst(
-            walnats.Actor(get_random_name(), e, slow_handler, execute_in='process'),
+            walnats.Actor(
+                get_random_name(), e, slow_handler,
+                execute_in=walnats.ExecuteIn.PROCESS,
+            ),
             messages=[(e, m) for m in messages],
             batch=len(messages),
         )
@@ -64,7 +67,10 @@ async def test_run_in_thread_pool() -> None:
     e = walnats.Event(get_random_name(), str)
     with duration_between(.1, .4):
         await run_burst(
-            walnats.Actor(get_random_name(), e, slow_handler, execute_in='thread'),
+            walnats.Actor(
+                get_random_name(), e, slow_handler,
+                execute_in=walnats.ExecuteIn.THREAD,
+            ),
             messages=[(e, m) for m in messages],
             batch=len(messages),
         )

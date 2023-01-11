@@ -11,6 +11,7 @@ import nats
 import nats.js
 
 from ._actor import Actor
+from ._execute_in import ExecuteIn
 
 
 @dataclass(frozen=True)
@@ -99,16 +100,16 @@ class ConnectedActors:
         thread_pool: ThreadPoolExecutor | None = None
         proc_pool: ProcessPoolExecutor | None = None
         with ExitStack() as stack:
-            if any(a.execute_in == 'thread' for a in self._actors):
+            if any(a.execute_in == ExecuteIn.THREAD for a in self._actors):
                 thread_pool = stack.enter_context(ThreadPoolExecutor(max_threads))
-            if any(a.execute_in == 'process' for a in self._actors):
+            if any(a.execute_in == ExecuteIn.PROCESS for a in self._actors):
                 proc_pool = stack.enter_context(ProcessPoolExecutor(max_processes))
             tasks: list[asyncio.Task] = []
             executor: Executor | None
             for actor in self._actors:
-                if actor.execute_in == 'thread':
+                if actor.execute_in == ExecuteIn.THREAD:
                     executor = thread_pool
-                elif actor.execute_in == 'process':
+                elif actor.execute_in == ExecuteIn.PROCESS:
                     executor = proc_pool
                 else:
                     executor = None

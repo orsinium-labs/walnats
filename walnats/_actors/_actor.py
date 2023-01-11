@@ -7,7 +7,7 @@ from datetime import datetime
 from logging import getLogger
 from time import perf_counter
 from typing import (
-    TYPE_CHECKING, Awaitable, Callable, Generic, Literal, Sequence, TypeVar,
+    TYPE_CHECKING, Awaitable, Callable, Generic, Sequence, TypeVar,
 )
 
 import nats.js
@@ -17,6 +17,7 @@ from .._constants import HEADER_DELAY, HEADER_REPLY
 from .._context import Context, ErrorContext, OkContext
 from .._events._event import BaseEvent, EventWithResponse
 from .._tasks import Tasks
+from ._execute_in import ExecuteIn
 from ._priority import Priority
 
 
@@ -128,13 +129,9 @@ class Actor(Generic[T, R]):
     log message, nak. Doesn't do anything for sync jobs without `execute_in` specified.
     """
 
-    execute_in: Literal['thread', 'process'] | None = None
+    execute_in: ExecuteIn = ExecuteIn.MAIN
     """
-    Set it to run the handler in a thread or in a process.
-    Use threads for slow IO-bound non-async/await handlers.
-    Use processes for slow CPU-bound handlers.
-    For running in a process, the handler and the message must be pickle'able.
-    If ``execute_in`` is set, the handler must be non-async/await.
+    Run the handler in the current thread, in a separate thread pool, in a process pool.
     """
 
     retry_delay: Sequence[float] = (.5, 1, 2, 4)
