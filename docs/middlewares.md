@@ -5,9 +5,17 @@
 ```{eval-rst}
 .. autoclass:: walnats.middlewares.Middleware
     :members:
-.. autoclass:: walnats.types.Context
-.. autoclass:: walnats.types.ErrorContext
-.. autoclass:: walnats.types.OkContext
+```
+
+## Context
+
+```{eval-rst}
+.. autoclass:: walnats.types.Context()
+    :members: actor, message, metadata, seq_number, attempts, trace_id
+.. autoclass:: walnats.types.ErrorContext()
+    :members: actor, message, exception
+.. autoclass:: walnats.types.OkContext()
+    :members: actor, message, duration
 ```
 
 ## Integrations

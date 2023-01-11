@@ -17,25 +17,20 @@ if TYPE_CHECKING:
 
 @dataclass(frozen=True)
 class BaseContext:
-    ...
 
-
-@dataclass(frozen=True)
-class Context:
-    """Base context, passed into :meth:`walnats.middlewares.Middleware.on_start` callback.
-
-    Args:
-        actor: Actor object from which the callback is triggered.
-            The most common things you want from it are ``ctx.actor.name``
-            and ``ctx.actor.event.name``.
-        message: decoded message payload.
-    """
     actor: Actor
-    message: object | None
+    """
+    Actor object from which the callback is triggered.
+    The most common things you want from it are ``ctx.actor.name``
+    and ``ctx.actor.event.name``.
+    """
+
     _msg: Msg
 
     @cached_property
     def metadata(self) -> Msg.Metadata:
+        """Message metadata provided by Nats.
+        """
         return self._msg.metadata
 
     @cached_property
@@ -78,24 +73,44 @@ class Context:
 
 
 @dataclass(frozen=True)
-class ErrorContext(Context):
-    """Context passed into :class:`walnats.middlewares.Middleware.on_failure` callback.
-
-    Args:
-        exception: the raised exception.
-
-    The ``message`` will be None if the error occured while trying to decode the message.
+class Context(BaseContext):
+    """Context passed into :meth:`walnats.middlewares.Middleware.on_start` callback.
     """
-    exception: Exception | asyncio.CancelledError
+
+    message: object
+    """
+    Decoded message payload.
+    """
 
 
 @dataclass(frozen=True)
-class OkContext(Context):
-    """Context passed into :meth:`walnats.middlewares.Middleware.on_success` callback.
-
-    Args:
-        duration: how long it took for handler to finish the job.
-            It also includes time spent in ``await``, so be mindful of it
-            when using it to reason about handler performance.
+class ErrorContext(BaseContext):
+    """Context passed into :class:`walnats.middlewares.Middleware.on_failure` callback.
     """
+
+    message: object | None
+    """
+    Decoded message payload. Will be None if the failure is raise while trying
+    to decode the message payload.
+    """
+
+    exception: Exception | asyncio.CancelledError
+    """The exception raised.
+    """
+
+
+@dataclass(frozen=True)
+class OkContext(BaseContext):
+    """Context passed into :meth:`walnats.middlewares.Middleware.on_success` callback.
+    """
+
+    message: object
+    """
+    Decoded message payload.
+    """
+
     duration: float
+    """
+    How long it took for handler to finish the job. It also includes time spent in
+    ``await``, so be mindful of it when using it to reason about handler performance.
+    """
