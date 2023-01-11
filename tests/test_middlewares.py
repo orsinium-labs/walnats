@@ -218,7 +218,17 @@ async def test_ErrorThresholdMiddleware__multiple_failures() -> None:
     mw = MockMiddleware()
     await run_actor(
         explode, ['hi'] * 40,
-        walnats.middlewares.ErrorThresholdMiddleware(mw),
+        walnats.middlewares.ErrorThresholdMiddleware(mw, total_failures=1000),
+    )
+    assert Counter(mw.hist) == Counter(dict(on_start=40, on_failure=19))
+
+
+async def test_ErrorThresholdMiddleware__multiple_failures_many_actors() -> None:
+    mw = MockMiddleware()
+    emw = walnats.middlewares.ErrorThresholdMiddleware(mw, actor_failures=100)
+    await asyncio.gather(
+        run_actor(explode, ['hi'] * 10, emw),
+        run_actor(explode, ['hi'] * 30, emw),
     )
     assert Counter(mw.hist) == Counter(dict(on_start=40, on_failure=19))
 

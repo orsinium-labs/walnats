@@ -105,6 +105,87 @@ async def test_delay() -> None:
         assert received == ['hi']
 
 
+async def test_consume_many_messages_without_burst() -> None:
+    received = []
+
+    async def handler(e: str) -> None:
+        await asyncio.sleep(.005)
+        received.append(e)
+
+    e = walnats.Event(get_random_name(), str)
+    a = walnats.Actor(get_random_name(), e, handler)
+    events = walnats.Events(e)
+    actors = walnats.Actors(a)
+    async with events.connect() as pub_conn, actors.connect() as sub_conn:
+        await pub_conn.register()
+        await sub_conn.register()
+        await pub_conn.emit(e, 'hi')
+        await asyncio.sleep(.01)
+        task = asyncio.create_task(sub_conn.listen())
+        await asyncio.sleep(.01)
+        await pub_conn.emit(e, 'hi')
+        await asyncio.sleep(.01)
+        task.cancel()
+        assert len(received) == 2
+
+
+@pytest.mark.parametrize('pulse', [True, False])
+async def test_pulse(pulse: bool) -> None:
+    received = []
+    first_run = True
+
+    async def handler(e: str) -> None:
+        nonlocal first_run
+        received.append(e)
+        if first_run:
+            first_run = False
+            await asyncio.sleep(10)
+
+    e = walnats.Event(get_random_name(), str)
+    a = walnats.Actor(get_random_name(), e, handler, ack_wait=.1, pulse=pulse)
+    events = walnats.Events(e)
+    actors = walnats.Actors(a)
+    async with events.connect() as pub_conn, actors.connect() as sub_conn:
+        await pub_conn.register()
+        await sub_conn.register()
+        await pub_conn.emit(e, 'hi')
+        await asyncio.sleep(.01)
+        task = asyncio.create_task(sub_conn.listen())
+        await asyncio.sleep(.2)
+        task.cancel()
+        if pulse:
+            assert len(received) == 1
+        else:
+            assert len(received) == 2
+
+
+async def test_with_response_but_regular_emit() -> None:
+    """
+    If an actor is subscribed to an event with a response,
+    it's still possible for the actor to receive a copy of this event
+    without response expected. In such case, we just expect the code not to explode.
+    """
+    received = []
+
+    async def handler(e: str) -> int:
+        await asyncio.sleep(.1)
+        received.append(e)
+        return 1
+
+    e = walnats.Event(get_random_name(), str)
+    er = e.with_response(int)
+    a = walnats.Actor(get_random_name(), er, handler)
+    events = walnats.Events(e)
+    actors = walnats.Actors(a)
+    async with events.connect() as pub_conn, actors.connect() as sub_conn:
+        await pub_conn.register()
+        await sub_conn.register()
+        await pub_conn.emit(e, 'hi')
+        await asyncio.sleep(.01)
+        await sub_conn.listen(burst=True)
+        assert len(received) == 1
+
+
 @pytest.mark.parametrize('delays, attempt, expected', [
     ([], 0, 0),
     ([], 1, 0),

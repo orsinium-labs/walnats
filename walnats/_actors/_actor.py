@@ -213,7 +213,7 @@ class Actor(Generic[T, R]):
         psub = await js.pull_subscribe_bind(
             durable=self.consumer_name,
             stream=self.event.stream_name,
-            # pending_msgs_limit=batch,
+            pending_msgs_limit=batch,
         )
         actor_sem = asyncio.Semaphore(self.max_jobs)
         try:
@@ -292,6 +292,7 @@ class Actor(Generic[T, R]):
                 await msg.nak(delay=delay_left)
                 return
 
+        pulse_task: asyncio.Task[None] | None = None
         if self.pulse:
             pulse_task = asyncio.create_task(
                 self._pulse(msg),
@@ -325,7 +326,8 @@ class Actor(Generic[T, R]):
                             timeout=self.job_timeout,
                         )
         except (Exception, asyncio.CancelledError) as exc:
-            pulse_task.cancel()
+            if pulse_task is not None:
+                pulse_task.cancel()
             logger.exception(f'Unhandled {type(exc).__name__} in "{self.name}" actor')
             nak_coro = msg.nak(delay=self._get_nak_delay(msg.metadata.num_delivered))
             tasks.start(nak_coro, name=f'{prefix}nak')
@@ -338,7 +340,8 @@ class Actor(Generic[T, R]):
                     if coro is not None:
                         tasks.start(coro, name=f'{prefix}on_failure')
         else:
-            pulse_task.cancel()
+            if pulse_task is not None:
+                pulse_task.cancel()
             await msg.ack()
 
             if isinstance(self.event, EventWithResponse):
