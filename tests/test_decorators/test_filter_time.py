@@ -42,6 +42,17 @@ def make_dt(**kwargs) -> datetime:
     (dict(year=2024, day=1), make_dt(year=2024, day=2), False),
     (dict(year=2024, day=1), make_dt(year=2025, day=1), False),
     (dict(year=2024, day=1), make_dt(year=2025, day=2), False),
+
+    (dict(minute=range(0, 60, 5)), make_dt(minute=0), True),
+    (dict(minute=range(0, 60, 5)), make_dt(minute=1), False),
+    (dict(minute=range(0, 60, 5)), make_dt(minute=2), False),
+    (dict(minute=range(0, 60, 5)), make_dt(minute=5), True),
+    (dict(minute=range(0, 60, 5)), make_dt(minute=6), False),
+    (dict(minute=range(0, 60, 5)), make_dt(minute=10), True),
+    (dict(minute=range(0, 60, 5)), make_dt(minute=11), False),
+    (dict(minute=range(0, 60, 5)), make_dt(minute=19), False),
+    (dict(minute=range(0, 60, 5)), make_dt(minute=55), True),
+    (dict(minute=range(0, 60, 5)), make_dt(minute=59), False),
 ])
 def test_filter_time(given: dict, dt: datetime, expected: bool) -> None:
     called = False

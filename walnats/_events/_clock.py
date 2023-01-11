@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import asyncio
-import dataclasses
+from dataclasses import dataclass
 from datetime import datetime
 from typing import TYPE_CHECKING, Callable
 
@@ -13,7 +13,7 @@ if TYPE_CHECKING:
     import walnats
 
 
-@dataclasses.dataclass(frozen=True)
+@dataclass(frozen=True)
 class Clock:
     """Emit periodic events.
 
@@ -42,9 +42,7 @@ class Clock:
     events will not be duplicated.
     """
 
-    event: Event[datetime] = dataclasses.field(
-        default_factory=lambda: Event('minute-passed', datetime),
-    )
+    event: Event[datetime] = Event('minute-passed', datetime)
     """
     The event to be emitted on each tick.
     """

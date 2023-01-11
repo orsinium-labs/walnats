@@ -52,9 +52,7 @@ class BaseContext:
         So, the number of delivery attempts might be higher than the number of
         times the handler was triggered for the message.
         """
-        attempts = self.metadata.num_delivered
-        if attempts is None:
-            return 0
+        attempts = self.metadata.num_delivered or 1
         if attempts >= 2:
             delayed = (self._msg.headers or {}).get(HEADER_DELAY)
             if delayed:

@@ -1,13 +1,18 @@
 from __future__ import annotations
 
 import asyncio
-from typing import Any
+import logging
+from typing import TYPE_CHECKING, Any
 
 import pytest
 
 import walnats
 
 from ..helpers import get_random_name
+
+
+if TYPE_CHECKING:
+    from _pytest.logging import LogCaptureFixture
 
 
 async def test_events_monitor(event: walnats.Event):
@@ -85,6 +90,29 @@ async def test_headers(
         await econ.emit(event, 'hi', **given)
         await acon.listen(burst=True)
     assert headers == expected
+
+
+async def test_emit_sync(event: walnats.Event, caplog: LogCaptureFixture) -> None:
+    caplog.set_level(logging.DEBUG, logger='walnats')
+    assert not caplog.records
+    events = walnats.Events(event)
+    async with events.connect() as con:
+        await con.register()
+
+        await con.emit(event, '', uid='m1')
+        assert not caplog.records
+
+        await con.emit(event, '', uid='m1')
+        assert not caplog.records
+
+        await con.emit(event, '', uid='m1', sync=True)
+        assert len(caplog.records) == 1
+        r = caplog.records[0]
+        assert r.levelname == 'DEBUG'
+        assert r.message == 'duplicate message'
+
+        await con.emit(event, '', uid='m2', sync=True)
+        assert len(caplog.records) == 1
 
 
 @pytest.mark.parametrize('create', [True, False])
