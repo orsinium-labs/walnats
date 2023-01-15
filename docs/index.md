@@ -29,6 +29,7 @@
     serializers
     services
     linter
+    alloy
 
 .. toctree::
     :maxdepth: 1
