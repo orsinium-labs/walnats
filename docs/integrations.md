@@ -2,6 +2,7 @@
 
 Looking for an integration with a specific service or tool? There is a good chance walnats already provides it out of the box.
 
+1. [alloy](http://alloytools.org/): [Verification](./alloy)
 1. [asyncapi](https://www.asyncapi.com/): {py:meth}`walnats.Services.get_async_api`.
 1. [cloudevents](https://github.com/cloudevents/spec): {py:class}`walnats.CloudEvent`.
 1. [cryptography](https://cryptography.io/en/latest/): {py:class}`walnats.serializers.FernetSerializer`.
