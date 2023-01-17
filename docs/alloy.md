@@ -1,7 +1,12 @@
 ---
+# Alloy requires frontmatter, and myst-parser requires it to be non-empty
 layout: default
 ---
 # Verification
+
+Formal verification usually means that you describe the same algoithm twice (declaratively and imperatively), and then computer checks that both implementations are equivalent. And when it comes to distributed systems, you need not only to describe your system but also how it changes over time. There are currently 2 usable languages that can effectively describe changing systems: [TLA+](https://en.wikipedia.org/wiki/TLA%2B) and [Alloy 6](https://en.wikipedia.org/wiki/Alloy_(specification_language)). On this page, I use Alloy 6 because it's  simpler, looks more like a programming language, great for describing relations, and has a nice visualizer.
+
+This page provides a declarative model for a walnats-based system. You can use this model to generate possible failure scenarios or built on top of it verification of your business-specific logic.
 
 ## Learn Alloy
 
@@ -32,18 +37,15 @@ Go to these tutorials to learn using the GUI:
 
 ## Message
 
-...
+The first "signature" (something like `class` in Python) we'll have is `Message`. It represents specific messages sent for a single event type. I make a model for only one event type to keep it simple. Whenever possible, you should use [inductive](https://en.wikipedia.org/wiki/Inductive_reasoning) approach. Prove your assumptions for one event, prove that every event in the system fits the model, and you have proven the whole system. That's why one event type is sufficient.
 
 ```alloy
-// Messages for a singe event type.
-// All the messages to be emitted are known
-// in advance, so it's easier to reason about
-// liveness properties.
-//
-// There are always some messages.
-// A system without messages is boring.
 some sig Message {}
 ```
+
+The `some` quantifier means that there is always at least one message because models without messages are boring. If nothing happens, what's the point?
+
+if there is a Message, it doesn't mean it has been emitted yet. All that means is that it will be emitted on the interval we consider. In other words, each message atom (instance) at the start is a planned message. I find it helpful for verification. We know in advance what messages we expect, and so it's easier to check if all expected messages actually happened. Lastly, it will help you if you plan to model producer failures.
 
 ## Producer
 
@@ -72,25 +74,29 @@ sig Actor1, Actor2 extends Actor {}
 
 ## Init
 
+Time to write some "predicates". A predicate is a function that returns a boolean. If there are multiple conditions on multiple lines, they are implicitly connected with `and`.
+
+The first predicate we'll have describes the initial state of the system:
+
 ```alloy
-// Initial state of the system.
 pred init {
     no Producer.emitted
     no Actor.handled
 }
 ```
 
+No messages we have should be emitted or handled at the start. If it is already handled, it's the same for us that it doesn't exist.
+
 ## Safety
 
-[Safety and liveness properties](https://en.wikipedia.org/wiki/Safety_and_liveness_properties) are fundamental to how distributed systems are verified.
+[Safety and liveness properties](https://en.wikipedia.org/wiki/Safety_and_liveness_properties) are fundamental to how distributed systems are verified. We'll start with safety. It describes invariants that must be always true in the system whatever happens, "that bad things never happen".
 
 ```alloy
-// Invariants that always hold true
 pred safety {
     all m: Message {
         // Every message is either isn't emitted yet
         // or emitted by a single producer.
-        lone m.~emitted
+        lone p: Producer | m in p.emitted
         // Every message is either isn't handled yet
         // or handled by a single instance of actor.
         lone a: Actor1 | m in a.handled
@@ -104,8 +110,7 @@ pred safety {
     all a: Actor |
         all m: a.handled |
             m in a.handled'
-    // Message can be handled only if it was
-    // emitted earlier.
+    // Message can be handled only if it has been emitted earlier.
     all m: Actor.handled' |
         m in Producer.emitted
 }
