@@ -49,7 +49,7 @@ if there is a Message, it doesn't mean it has been emitted yet. All that means i
 
 ## Producer
 
-...
+Producer is a service that emits messages for the event. We can have multiple producers.
 
 ```alloy
 sig Producer {
@@ -57,20 +57,23 @@ sig Producer {
 }
 ```
 
+Here, `set` means, well, that there is a set of messages, and `var` means that this set may change over time.
+
 ## Actors
 
-...
+And lastly, let's make some actors:
 
 ```alloy
 abstract sig Actor {
     var handled: set Message
 }
 
-// Different actor types, such as "send-email"
-// or "generate-report". Each atom here
-// is a separate instance of that actor.
 sig Actor1, Actor2 extends Actor {}
 ```
+
+`Actor1` and `Actor2` are different actor types, such as "send-email" or "generate-report". Each atom (instance) here is a separate instance of that actor. For example, the atom `Actor1$2` will be 2nd instance of Actor1.
+
+The `abstract` means that there are no atoms of `Actor` type, it must be either `Actor1` or `Actor2`.
 
 ## Init
 
@@ -89,7 +92,7 @@ No messages we have should be emitted or handled at the start. If it is already 
 
 ## Safety
 
-[Safety and liveness properties](https://en.wikipedia.org/wiki/Safety_and_liveness_properties) are fundamental to how distributed systems are verified. We'll start with safety. It describes invariants that must be always true in the system whatever happens, "that bad things never happen".
+[Safety and liveness properties](https://en.wikipedia.org/wiki/Safety_and_liveness_properties) are fundamental to how distributed systems are verified. We'll start with safety. It describes invariants that must be **always** true in the system whatever happens, "that bad things never happen".
 
 ```alloy
 pred safety {
@@ -116,12 +119,13 @@ pred safety {
 }
 ```
 
+Whatever happens, a message can be emitted at most by one actor, handled by at most one instance of each actor, and so on. Always.
+
 ## Liveness
 
-...
+Liveness properties are the ones that **eventually** will be true, that "good things happen".
 
 ```alloy
-// Properties that will eventually hold true.
 pred liveness {
     // Every message is eventaully emitted.
     Message = Producer.emitted
@@ -133,11 +137,11 @@ pred liveness {
 
 ## Step algorithm
 
-...
+A common approach to verification of an algorithm is to write an [imperative](https://en.wikipedia.org/wiki/Imperative_programming) implementation of the algorithm, then describe [declarative](https://en.wikipedia.org/wiki/Declarative_programming) properties, and then prove that the described properties are true for the algorithm. For distributed systems that means to describe how the system state changes on each step and then prove safety and liveness properties.
 
-## Running
+We won't do that. Our system is complex by nature, and there is no simple imperative algorithm describing it all. Instead, we'll let Alloy to change anything in our system: emit and handle any events and all. Safety properties will make sure that such changes are always legal and make sense, and liveness properties will make sure that our system always moves forward.
 
-Lastly, we specify [run](https://alloy.readthedocs.io/en/latest/language/commands.html#run) command where we put together everything we described above:
+So, the last thing we do is specify [run](https://alloy.readthedocs.io/en/latest/language/commands.html#run) command where we put together everything we described above:
 
 ```alloy
 run {
@@ -146,3 +150,9 @@ run {
     always eventually liveness
 }
 ```
+
+We start with `init` and let the system evolve such that `safety` always holds true and `liveness` is eventually true. The rest is up to Alloy.
+
+## Stuttering
+
+Since we require
