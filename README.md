@@ -14,7 +14,15 @@ Features:
 + Exactly-once delivery.
 + Smart and configurable retries.
 + Many integrations.
++ Request/reply.
++ Periodic tasks.
++ Built-in linter.
++ Generator for AsyncAPI spec and EventSourcing diagrams.
++ CloudEvents support.
++ Extensive documentation.
 + Compatible. You can use walnats to emit events for non-walnats services or consume events emitted by non-walnats services. The tool is flexible enough to adapt to any format of the messages you use.
+
+Read [the documentation](https://walnats.orsinium.dev/) to get started.
 
 ## Compared to other tools
 
@@ -100,3 +108,5 @@ That's it! Now you can run the services:
 1. Stop a subscriber (`ctrl+c`) to see that no messages get lost.
 
 This code is available in [examples/readme_demo](./examples/readme_demo/).
+
+Read [the documentation](https://walnats.orsinium.dev/) to learn more.
