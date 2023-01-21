@@ -4,7 +4,7 @@ This page covers common usage patterns of walnats.
 
 ## Passing dependencies into handlers
 
-The handler can be any callable object (like a method or a class with `__call__` method), not necessarily a function. You can use this fact to bind handler's dependencies as class attributes:
+The handler can be any callable object (like a method or a class with a `__call__` method), not necessarily a function. You can use this fact to bind the handler's dependencies as class attributes:
 
 ```python
 @dataclass
@@ -24,7 +24,7 @@ async def run() -> None:
 
 ## Routing events based on a value
 
-Often, you'll have actors that need to do something only for event with a specific value in some field. For example, send email only for a parcel update only when it moves in a specific status or write audit logs only for non-admin users. The easiest solution is to simply check the condition at the beginning of the handler, but that means the actor will have to receive, decode, and check every event and actually do something useful only to a small portion of them.
+Often, you'll have actors that need to do something only for an event with a specific value in some field. For example, send email only for a parcel update only when it moves in a specific status or write audit logs only for non-admin users. The easiest solution is to simply check the condition at the beginning of the handler, but that means the actor will have to receive, decode, and check every event and do something useful only to a small portion of them.
 
 A better solution (in some situations) might be to provide separate events for each possible value of the field. Assuming that there is a small and well-known set of possible values.
 

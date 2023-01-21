@@ -4,13 +4,13 @@ layout: default
 ---
 # Verification
 
-Formal verification usually means that you describe the same algoithm twice (declaratively and imperatively), and then computer checks that both implementations are equivalent. And when it comes to distributed systems, you need not only to describe your system but also how it changes over time. There are currently 2 usable languages that can effectively describe changing systems: [TLA+](https://en.wikipedia.org/wiki/TLA%2B) and [Alloy 6](https://en.wikipedia.org/wiki/Alloy_(specification_language)). On this page, I use Alloy 6 because it's  simpler, looks more like a programming language, great for describing relations, and has a nice visualizer.
+Formal verification usually means that you describe the same algorithm twice (declaratively and imperatively), and then the computer checks that both implementations are equivalent. And when it comes to distributed systems, you need not only to describe your system but also how it changes over time. There are currently 2 usable languages that can effectively describe changing systems: [TLA+](https://en.wikipedia.org/wiki/TLA%2B) and [Alloy 6](https://en.wikipedia.org/wiki/Alloy_(specification_language)). On this page, I use Alloy 6 because it's simpler, looks more like a programming language, is great for describing relations, and has a nice visualizer.
 
-This page provides a declarative model for a walnats-based system. You can use this model to generate possible failure scenarios or built on top of it verification of your business-specific logic.
+This page provides a declarative model for a walnats-based system. You can use this model to generate possible failure scenarios or build on top of it verification of your business-specific logic.
 
 ## Learn Alloy
 
-The good news is that there are tons of articles and publications about Alloy. Disproportinally more than this tool is actually used by sane people. The bad news is that Alloy 6 (released in 2021) was a huge release introducing a great support for working with time. Before the release, working with time required a lot of dirty hacks and workarounds, and it all was far from pretty. And most of models and tutorials using Alloy relied on time. Hence if you see a tutorial for Alloy using time and not updated after 2021, you can safely dicard it, it's useless now.
+The good news is that there are tons of articles and publications about Alloy. Disproportionally more than this tool is actually used by sane people. The bad news is that Alloy 6 (released in 2021) was a huge release introducing great support for working with time. Before the release, working with the time required a lot of dirty hacks and workarounds, and it all was far from pretty. And most of the models and tutorials using Alloy relied on time. Hence if you see a tutorial for Alloy using time and not updated after 2021, you can safely discard it, it's useless now.
 
 There are some resources to learn Alloy that are still good:
 
@@ -26,7 +26,7 @@ Alloy [supports running Markdown files](https://alloy.readthedocs.io/en/latest/t
 1. [Install Alloy Analyzer](https://github.com/AlloyTools/org.alloytools.alloy/releases/)
 1. Run Alloy Analyzer: `java -jar org.alloytools.alloy.dist.jar`.
 1. Press "Open".
-1. Navigate to the walnats repository you clonned, and inside go to `docs/alloy.md` and open it.
+1. Navigate to the walnats repository you cloned, and inside go to `docs/alloy.md` and open it.
 1. Press "Execute" to generate a sample of the model and "Show" to open the graph.
 
 Go to these tutorials to learn using the GUI:
@@ -37,7 +37,7 @@ Go to these tutorials to learn using the GUI:
 
 ## Message
 
-The first "signature" (something like `class` in Python) we'll have is `Message`. It represents specific messages sent for a single event type. I make a model for only one event type to keep it simple. Whenever possible, you should use [inductive](https://en.wikipedia.org/wiki/Inductive_reasoning) approach. Prove your assumptions for one event, prove that every event in the system fits the model, and you have proven the whole system. That's why one event type is sufficient.
+The first "signature" (something like `class` in Python) we'll have is `Message`. It represents specific messages sent for a single event type. I make a model for only one event type to keep it simple. Whenever possible, you should use the [inductive](https://en.wikipedia.org/wiki/Inductive_reasoning) approach. Prove your assumptions for one event, prove that every event in the system fits the model, and you have proven the whole system. That's why one event type is sufficient.
 
 ```alloy
 some sig Message {}
@@ -45,11 +45,11 @@ some sig Message {}
 
 The `some` quantifier means that there is always at least one message because models without messages are boring. If nothing happens, what's the point?
 
-if there is a Message, it doesn't mean it has been emitted yet. All that means is that it will be emitted on the interval we consider. In other words, each message atom (instance) at the start is a planned message. I find it helpful for verification. We know in advance what messages we expect, and so it's easier to check if all expected messages actually happened. Lastly, it will help you if you plan to model producer failures.
+if there is a Message, it doesn't mean it has been emitted yet. All that means is that it will be emitted on the interval we consider. In other words, each message atom (instance) at the start is a planned message. I find it helpful for verification. We know in advance what messages we expect, so it's easier to check if all expected messages actually happened. Lastly, it will help you if you plan to model producer failures.
 
 ## Producer
 
-Producer is a service that emits messages for the event. We can have multiple producers.
+A producer is a service that emits messages for the event. We can have multiple producers.
 
 ```alloy
 sig Producer {
@@ -71,7 +71,7 @@ abstract sig Actor {
 sig Actor1, Actor2 extends Actor {}
 ```
 
-`Actor1` and `Actor2` are different actor types, such as "send-email" or "generate-report". Each atom (instance) here is a separate instance of that actor. For example, the atom `Actor1$2` will be 2nd instance of Actor1.
+`Actor1` and `Actor2` are different actor types, such as "send-email" or "generate-report". Each atom (instance) here is a separate instance of that actor. For example, the atom `Actor1$2` will be the 2nd instance of Actor1.
 
 The `abstract` means that there are no atoms of `Actor` type, it must be either `Actor1` or `Actor2`.
 
@@ -127,9 +127,9 @@ Liveness properties are the ones that **eventually** will be true, that "good th
 
 ```alloy
 pred liveness {
-    // Every message is eventaully emitted.
+    // Every message is eventually emitted.
     Message = Producer.emitted
-    // Every emitted message is eventaully processed.
+    // Every emitted message is eventually processed.
     Producer.emitted = Actor1.handled
     Producer.emitted = Actor2.handled
 }
@@ -155,4 +155,7 @@ We start with `init` and let the system evolve such that `safety` always holds t
 
 ## Stuttering
 
-Since we require
+Since we require `liveness` properties to be eventually true, on each step the system will progress towards that goal. There are a few things to keep in mind, though:
+
++ One step of the spec can take any amount of time in the real world, from nanoseconds to days. The system may die and be dead for days until an engineer comes and fixes a critical bug. All we say is that *eventually* messages will be processed.
++ Individual actors or even all of them still can [stutter](https://www.learntla.com/core/temporal-logic.html?highlight=stutter#anything-can-crash) for any duration of steps. Again, all we say is that they will *eventually* move on.

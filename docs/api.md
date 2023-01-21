@@ -1,6 +1,6 @@
 # API
 
-Are you looking for an API documentation for a specific class or module? If can find most of the answers in docstrings without leaving the IDE. But in case you need a web reference, here is an index of pages covering specific parts of the API.
+Are you looking for API documentation for a specific class or module? If can find most of the answers in docstrings without leaving the IDE. But in case you need a web reference, here is an index of pages covering specific parts of the API.
 
 ## Public classes
 
