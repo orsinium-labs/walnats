@@ -4,11 +4,11 @@ If possible, you should try to design your system as a [directed acyclic graph](
 
 The internal implementation is similar to [Request-Reply](https://docs.nats.io/nats-concepts/core-nats/reqreply) pattern in Nats. There is a difference, though. Nats implements it only for core Nats, without JetStream, and so it cannot be used with Nats JetStream consumers (and so with walnats actors). Walnats fixes it by providing its own implementation of the pattern on top of Nats. However, there is still no persistency for responses. Whatever response the actor sends, it will be emitted through the core Nats. If there is a network failure or the producer gets restarted, the response will get lost. THe idea is that the response matters only right now and only for this specific producer. If you need persistency, explicitly use events and actors for responses as well.
 
-There are just a few changes you need to make to send and receive responses:
+There are just a few changes you need to make for sending and receiving responses:
 
-1. .
-1. .
-1. .
+1. Make a copy of Event with {py:meth}`walnats.Event.with_response`.
+1. Emit an event for this copy using {py:meth}`walnats.types.ConnectedEvents.request`. The method will return the result.
+1. Return the result from the handler.
 
 ```python
 # events
