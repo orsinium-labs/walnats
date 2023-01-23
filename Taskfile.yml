@@ -19,7 +19,6 @@ tasks:
     status:
       - which flit
     cmds:
-      - date
       - python3 -m pip install flit
   venv:test:
     status:
@@ -43,14 +42,12 @@ tasks:
       - install:flit
       - venv:test
     cmds:
-      - date
       - >
         flit install
         --python {{.TEST_PYTHON}}
         --extras=test,integrations
         --deps=production
         --symlink
-      - date
   install:lint:
     sources:
       - pyproject.toml
@@ -106,9 +103,7 @@ tasks:
     deps:
       - install:test
     cmds:
-      - date
       - "{{.TEST_PYTHON}} -m pytest {{.CLI_ARGS}}"
-      - date
   flake8:
     desc: "lint Python code"
     deps:
