@@ -5,14 +5,12 @@ from typing import TYPE_CHECKING, AsyncIterator, Iterator
 
 import nats
 
+from .._constants import DEFAULT_SERVER
 from ._connection import ConnectedEvents
 
 
 if TYPE_CHECKING:
     from ._event import BaseEvent
-
-
-DEFAULT_SERVER = 'nats://localhost:4222'
 
 
 class Events:

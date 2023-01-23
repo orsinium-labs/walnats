@@ -1,3 +1,4 @@
+import os
 from typing import Final
 
 import nats.js
@@ -15,3 +16,5 @@ HEADER_TRACE: Final = 'Walnats-Trace'
 # Header for the timestamp until which the message has been delayed
 # (in UTC, in seconds, as float).
 HEADER_DELAY = 'Walnats-Delay'
+
+DEFAULT_SERVER = os.environ.get('NATS_SERVER', 'nats://localhost:4222')
