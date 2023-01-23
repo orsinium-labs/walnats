@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import asyncio
+from pathlib import Path
 import subprocess
+from shutil import which
 
 import pytest
 
@@ -12,8 +14,12 @@ from .helpers import UDPLogProtocol, get_random_name, get_random_port
 
 @pytest.fixture(autouse=True, scope='session')
 def run_nats_server():
-    cmd = ['nats-server', '--jetstream']
-    proc = subprocess.Popen(cmd, stdout=subprocess.DEVNULL)
+    exe = 'nats-server'
+    if not which(exe):
+        exe = str(Path.home() / 'go' / 'bin' / 'nats-server')
+    if not which(exe):
+        raise RuntimeError('nats-server must be in PATH')
+    proc = subprocess.Popen([exe, '--jetstream'], stdout=subprocess.DEVNULL)
     assert proc.returncode is None
     yield
     assert proc.returncode is None
