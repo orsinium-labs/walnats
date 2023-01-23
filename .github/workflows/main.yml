@@ -31,8 +31,6 @@ jobs:
           python-version: "3.8"
       - uses: arduino/setup-task@v1
       - run: task pytest
-        env:
-          NATS_SERVER: nats://nats:4222
 
   markdownlint-cli:
     runs-on: ubuntu-latest
