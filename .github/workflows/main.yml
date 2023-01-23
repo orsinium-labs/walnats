@@ -33,6 +33,10 @@ jobs:
       - uses: onichandame/nats-action@master
         with:
           port: "4222"
+      - uses: onichandame/nats-client-action@master
+        with:
+          servers: "nats://localhost:4222"
+          cluster: "false"
       - run: task test
 
   markdownlint-cli:
