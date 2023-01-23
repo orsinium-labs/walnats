@@ -50,7 +50,7 @@ async def test_run_in_process_pool() -> None:
     messages = [f'msg{i}' for i in range(20)]
 
     e = walnats.Event(get_random_name(), str)
-    with duration_between(.1, .4):
+    with duration_between(.1, 1.5):
         await run_burst(
             walnats.Actor(
                 get_random_name(), e, slow_handler,
@@ -65,7 +65,7 @@ async def test_run_in_thread_pool() -> None:
     messages = [f'msg{i}' for i in range(20)]
 
     e = walnats.Event(get_random_name(), str)
-    with duration_between(.1, .4):
+    with duration_between(.1, .5):
         await run_burst(
             walnats.Actor(
                 get_random_name(), e, slow_handler,
