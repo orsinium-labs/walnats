@@ -4,6 +4,7 @@ import asyncio
 from pathlib import Path
 import subprocess
 from shutil import which
+import time
 
 import pytest
 
@@ -19,7 +20,8 @@ def run_nats_server():
         exe = str(Path.home() / 'go' / 'bin' / 'nats-server')
     if not which(exe):
         raise RuntimeError('nats-server must be in PATH')
-    proc = subprocess.Popen([exe, '--jetstream'], stdout=subprocess.DEVNULL)
+    proc = subprocess.Popen([exe, '--jetstream'])
+    time.sleep(.1)
     assert proc.returncode is None
     yield
     assert proc.returncode is None
