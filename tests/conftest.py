@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 import asyncio
-from pathlib import Path
 import subprocess
-from shutil import which
 import time
+from pathlib import Path
+from shutil import which
 
 import pytest
 
