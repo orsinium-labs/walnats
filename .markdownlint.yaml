@@ -5,4 +5,4 @@ MD007:          # unordered list indentation
 MD013: false    # do not validate line length
 MD014: false    # allow $ before command output
 MD029:          # ordered list prefix
-  style: "ordered"
+  style: "one"

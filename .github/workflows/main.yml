@@ -24,20 +24,19 @@ jobs:
 
   test:
     runs-on: ubuntu-latest
+    services:
+      nats:
+        image: nats
+        options: "--jetstream"
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-python@v4
         with:
           python-version: "3.8"
       - uses: arduino/setup-task@v1
-      - uses: onichandame/nats-action@master
-        with:
-          port: "4222"
-      - uses: onichandame/nats-client-action@master
-        with:
-          servers: "nats://localhost:4222"
-          cluster: "false"
       - run: task test
+        env:
+          NATS_SERVER: nats://nats:4222
 
   markdownlint-cli:
     runs-on: ubuntu-latest
