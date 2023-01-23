@@ -5,8 +5,8 @@ The publisher is the code that emits events. It's up to you how you structure an
 All you need to do:
 
 1. Collect all events you're going to emit from this app into `walnats.Events` registry.
-2. Call `register` to create or update Nats JetStream streams.
-3. Call `emit` at any point to emit an event.
+1. Call `register` to create or update Nats JetStream streams.
+1. Call `emit` at any point to emit an event.
 
 ```python
 events = walnats.Events(USER_CREATED, USER_UPDATED)

@@ -24,16 +24,13 @@ jobs:
 
   test:
     runs-on: ubuntu-latest
-    services:
-      nats:
-        image: nats
-        options: "--jetstream"
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-python@v4
         with:
           python-version: "3.8"
       - uses: arduino/setup-task@v1
+      - run: sudo docker run -d -p 4222:4222 nats --jetstream
       - run: task test
         env:
           NATS_SERVER: nats://nats:4222
