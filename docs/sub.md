@@ -5,8 +5,8 @@ The subscriber runs a set of actors. It's up to you to provide CLI for the subsc
 What you need to do:
 
 1. Collect all actors you want to run into the `walnats.Actors` registry.
-2. Call `register` to create Nats JetStream consumers.
-3. Call `listen` to start listening for events.
+1. Call `register` to create Nats JetStream consumers.
+1. Call `listen` to start listening for events.
 
 ```python
 actors = walnats.Actors(SEND_EMAIL, SEND_SMS)
