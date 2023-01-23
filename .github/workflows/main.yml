@@ -30,8 +30,7 @@ jobs:
         with:
           python-version: "3.8"
       - uses: arduino/setup-task@v1
-      - run: sudo docker run -d -p 4222:4222 nats --jetstream
-      - run: task pytest -- -vvv
+      - run: task pytest
         env:
           NATS_SERVER: nats://nats:4222
 

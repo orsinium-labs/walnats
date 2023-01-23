@@ -1,12 +1,23 @@
 from __future__ import annotations
 
 import asyncio
+import subprocess
 
 import pytest
 
 import walnats
 
 from .helpers import UDPLogProtocol, get_random_name, get_random_port
+
+
+@pytest.fixture(autouse=True, scope='session')
+def run_nats_server():
+    cmd = ['nats-server', '--jetstream']
+    proc = subprocess.Popen(cmd, stdout=subprocess.DEVNULL)
+    assert proc.returncode is None
+    yield
+    assert proc.returncode is None
+    proc.kill()
 
 
 @pytest.fixture
