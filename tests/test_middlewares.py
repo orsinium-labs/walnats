@@ -64,7 +64,7 @@ async def run_actor(
         await asyncio.gather(
             *[pub_conn.emit(event, m, trace_id=trace_id) for m in messages],
         )
-        await asyncio.sleep(.02)
+        await asyncio.sleep(1)
         await sub_conn.listen(burst=True, batch=len(messages), **kwargs)
 
 
