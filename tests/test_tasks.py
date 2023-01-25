@@ -5,6 +5,7 @@ import pytest
 
 from walnats._tasks import Tasks
 
+
 CI = bool(os.environ.get('CI'))
 
 
