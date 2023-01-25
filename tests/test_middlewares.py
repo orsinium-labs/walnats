@@ -251,6 +251,7 @@ async def test_FrequencyMiddleware() -> None:
     await run_actor(
         handler, ['hi'] * 40,
         walnats.middlewares.FrequencyMiddleware(mw),
+        poll_delay=20,
     )
     assert Counter(mw.hist) == Counter(dict(on_success=1, on_failure=1, on_start=1))
 
