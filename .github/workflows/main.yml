@@ -22,6 +22,16 @@ jobs:
       - uses: arduino/setup-task@v1
       - run: task lint
 
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+      - uses: arduino/setup-task@v1
+      - run: task pytest -- --cov-fail-under=96
+
   markdownlint-cli:
     runs-on: ubuntu-latest
     steps:
