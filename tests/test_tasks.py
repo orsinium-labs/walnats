@@ -13,10 +13,9 @@ async def test_wait():
     t = Tasks('tasks')
     for _ in range(20):
         t.start(asyncio.sleep(.001), 'task')
+    len(t._tasks) == 20
     await t.wait()
-    assert len(t._tasks) == 20
-    for task in t._tasks:
-        assert task.done()
+    assert len(t._tasks) == 0
 
 
 async def test_cancel():
