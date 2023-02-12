@@ -7,7 +7,7 @@ from ._events import Clock, CloudEvent, Event, Events, Limits
 from ._services import Services
 
 
-__version__ = '1.2.5'
+__version__ = '1.2.6'
 __all__ = [
     # classes
     'Actor',
